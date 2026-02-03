@@ -1,0 +1,25 @@
+[Unit]
+Description=Meshtastic → OSM Notes Gateway
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pi
+Group=dialout
+WorkingDirectory=/var/lib/lora-osmnotes
+Environment="PATH=/opt/lora-osmnotes/bin"
+Environment="DATA_DIR=/var/lib/lora-osmnotes"
+ExecStart=/opt/lora-osmnotes/bin/python -m gateway.main
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=lora-osmnotes
+
+# Security
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
