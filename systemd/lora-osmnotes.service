@@ -5,7 +5,8 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-User=pi
+# User will be set by install script (pi, ubuntu, or current user)
+# User=pi
 Group=dialout
 WorkingDirectory=/var/lib/lora-osmnotes
 Environment="PATH=/opt/lora-osmnotes/bin"

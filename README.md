@@ -245,7 +245,56 @@ pytest --cov=gateway --cov-report=html
 
 ## Troubleshooting
 
+### Error: "Failed to determine user credentials"
+
+Si ves este error en los logs, significa que el usuario configurado en el servicio no existe.
+
+**Solución rápida:**
+```bash
+sudo bash scripts/fix_service_user.sh
+```
+
+O manualmente:
+```bash
+# Ver qué usuario existe
+whoami
+
+# Editar el servicio
+sudo systemctl edit --full lora-osmnotes.service
+# Cambiar User=pi por User=tu_usuario
+
+# Recargar y reiniciar
+sudo systemctl daemon-reload
+sudo systemctl restart lora-osmnotes
+```
+
+Ver **[docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)** para guía completa de troubleshooting.
+
 ### El servicio no inicia
+
+**Error común: "Failed to determine user credentials"**
+
+Si ves este error, el usuario `pi` no existe en tu sistema. Solución:
+
+```bash
+# Ver qué usuario existe
+whoami
+
+# Editar el servicio
+sudo systemctl edit --full lora-osmnotes.service
+# Cambiar User=pi por User=tu_usuario
+
+# Recargar y reiniciar
+sudo systemctl daemon-reload
+sudo systemctl restart lora-osmnotes
+```
+
+O reinstalar con el script que detecta automáticamente el usuario:
+```bash
+sudo bash scripts/install_pi.sh
+```
+
+**Otros problemas:**
 
 1. Verificar logs:
 ```bash
@@ -262,6 +311,8 @@ sudo chmod 666 /dev/ttyACM0  # Temporal para pruebas
 ```bash
 groups
 ```
+
+Ver **[TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)** para más detalles.
 
 ### No se reciben mensajes
 

@@ -27,11 +27,22 @@ apt-get install -y \
     git \
     sqlite3
 
+# Detect user (pi, ubuntu, or current user)
+if id "pi" &>/dev/null; then
+    SERVICE_USER="pi"
+elif id "ubuntu" &>/dev/null; then
+    SERVICE_USER="ubuntu"
+else
+    SERVICE_USER="${SUDO_USER:-$USER}"
+fi
+
+echo "Detected service user: $SERVICE_USER"
+
 # Create data directory
 DATA_DIR="/var/lib/lora-osmnotes"
 echo "Creating data directory: $DATA_DIR"
 mkdir -p "$DATA_DIR"
-chown pi:pi "$DATA_DIR" 2>/dev/null || chown $SUDO_USER:$SUDO_USER "$DATA_DIR" 2>/dev/null || true
+chown "$SERVICE_USER:$SERVICE_USER" "$DATA_DIR" 2>/dev/null || chown $SUDO_USER:$SUDO_USER "$DATA_DIR" 2>/dev/null || true
 
 # Create virtual environment
 VENV_DIR="/opt/lora-osmnotes"
@@ -67,7 +78,7 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-User=pi
+User=$SERVICE_USER
 Group=dialout
 WorkingDirectory=$DATA_DIR
 Environment="PATH=$VENV_DIR/bin"
@@ -88,8 +99,8 @@ WantedBy=multi-user.target
 EOF
 
 # Add user to dialout group for serial access
-echo "Adding user to dialout group..."
-usermod -a -G dialout pi 2>/dev/null || usermod -a -G dialout $SUDO_USER 2>/dev/null || true
+echo "Adding user $SERVICE_USER to dialout group..."
+usermod -a -G dialout "$SERVICE_USER" 2>/dev/null || echo "Warning: Could not add user to dialout group"
 
 # Reload systemd
 systemctl daemon-reload
@@ -100,12 +111,19 @@ systemctl enable lora-osmnotes.service
 echo ""
 echo "Installation complete!"
 echo ""
+echo "Service user: $SERVICE_USER"
+echo ""
 echo "Next steps:"
 echo "1. Edit $DATA_DIR/.env and set SERIAL_PORT (default: /dev/ttyACM0)"
 echo "2. Connect your Meshtastic device"
 echo "3. Check device: ls -l /dev/ttyACM*"
 echo "4. Start service: sudo systemctl start lora-osmnotes"
 echo "5. Check logs: sudo journalctl -u lora-osmnotes -f"
+echo ""
+echo "If you see 'Failed to determine user credentials' error:"
+echo "  The service user was set to: $SERVICE_USER"
+echo "  Verify this user exists: id $SERVICE_USER"
+echo "  Or edit /etc/systemd/system/lora-osmnotes.service and change User="
 echo ""
 echo "To test in dry-run mode:"
 echo "  Edit $DATA_DIR/.env and set DRY_RUN=true"
