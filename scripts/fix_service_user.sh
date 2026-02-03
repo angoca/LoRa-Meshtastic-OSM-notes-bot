@@ -40,14 +40,35 @@ fi
 cp "$SERVICE_FILE" "${SERVICE_FILE}.backup.$(date +%Y%m%d_%H%M%S)"
 echo "Backup created: ${SERVICE_FILE}.backup.*"
 
-# Update User line
-sed -i "s/^User=.*/User=$SERVICE_USER/" "$SERVICE_FILE"
+# Check if User= line exists (active or commented)
+if grep -q "^User=" "$SERVICE_FILE" || grep -q "^#.*User=" "$SERVICE_FILE"; then
+    # Update existing User line (handles both commented and uncommented)
+    sed -i "s/^User=.*/User=$SERVICE_USER/" "$SERVICE_FILE"
+    sed -i "s/^#.*User=.*/User=$SERVICE_USER/" "$SERVICE_FILE"
+else
+    # No User line exists, add it after Type=simple
+    if grep -q "^Type=simple" "$SERVICE_FILE"; then
+        sed -i "/^Type=simple/a User=$SERVICE_USER" "$SERVICE_FILE"
+    elif grep -q "^\[Service\]" "$SERVICE_FILE"; then
+        # Add after [Service] section
+        sed -i "/^\[Service\]/a User=$SERVICE_USER" "$SERVICE_FILE"
+    else
+        echo "ERROR: Cannot find [Service] section in service file"
+        exit 1
+    fi
+fi
 
 # Verify change
 if grep -q "^User=$SERVICE_USER" "$SERVICE_FILE"; then
     echo "✓ Service file updated successfully"
+    echo "  User set to: $SERVICE_USER"
 else
     echo "ERROR: Failed to update service file"
+    echo "Current User line(s) in file:"
+    grep -E "^User=|^#.*User=" "$SERVICE_FILE" || echo "  (none found)"
+    echo ""
+    echo "Please manually edit $SERVICE_FILE and set:"
+    echo "  User=$SERVICE_USER"
     exit 1
 fi
 

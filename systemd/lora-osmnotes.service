@@ -5,8 +5,11 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-# User will be set by install script (pi, ubuntu, or current user)
-# User=pi
+# SECURITY: User must be set to a non-root user
+# The install script (scripts/install_pi.sh) will automatically detect and set the correct user
+# If installing manually, replace 'nobody' with your username (e.g., User=pi or User=ubuntu)
+# WARNING: Do not run as root! Change this to a non-privileged user.
+User=nobody
 Group=dialout
 WorkingDirectory=/var/lib/lora-osmnotes
 Environment="PATH=/opt/lora-osmnotes/bin"
