@@ -197,6 +197,7 @@ El sistema evita crear notas duplicadas si coinciden:
 ## Documentación
 
 - **[README.md](README.md)** - Esta guía de inicio rápido
+- **[docs/spec.md](docs/spec.md)** - Especificación canónica del MVP (fuente de verdad)
 - **[docs/architecture.md](docs/architecture.md)** - Arquitectura del sistema y diseño
 - **[CONTRIBUTING.md](CONTRIBUTING.md)** - Guía para contribuidores
 - **[docs/message-format.md](docs/message-format.md)** - Formato de mensajes Meshtastic
@@ -224,7 +225,11 @@ El sistema evita crear notas duplicadas si coinciden:
 ├── setup.py                 # Setup package
 ├── README.md                # Documentación principal
 ├── CONTRIBUTING.md          # Guía de contribución
+├── CHANGELOG.md             # Historial de cambios
+├── CITATION.cff             # Información de citación
+├── AUTHORS                   # Autores y contribuidores
 └── docs/                    # Documentación técnica
+    ├── spec.md              # Especificación canónica del MVP
     ├── architecture.md      # Arquitectura del sistema
     ├── message-format.md    # Formato de mensajes
     ├── API.md               # Referencia de API interna
@@ -394,7 +399,9 @@ Tabla `notes`:
 
 ## Licencia
 
-Ver archivo LICENSE.
+Ver archivo [LICENSE](LICENSE).
+
+Este proyecto está licenciado bajo GPL-3.0. Para información sobre cómo citar este software, ver [CITATION.cff](CITATION.cff).
 
 ## Contribuciones
 

@@ -1,0 +1,37 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "LoRa Mesh → OSM Notes Gateway"
+version: 0.1.0
+date-released: 2026-02-02
+abstract: "Gateway MVP for converting Meshtastic LoRa mesh messages into OpenStreetMap Notes. Designed for Raspberry Pi 3 with Meshtastic Heltec V3 device connected via USB."
+authors:
+  - given-names: Andrés
+    family-names: Gómez Casanova
+    email: angoca@osm.lat
+    orcid: "https://orcid.org/0009-0003-5016-1881"
+    identifiers:
+      - type: github
+        value: angoca
+  - given-names: Doris Carmiña
+    family-names: Ruiz Ramírez
+    orcid: "https://orcid.org/0000-0001-8938-5872"
+  - given-names: Angie Lorena
+    family-names: Trujillo Guayara
+  - given-names: Rafael Alberto
+    family-names: Isturiz
+    email: risturiz@osm.lat
+    identifiers:
+      - type: github
+        value: risturiz
+repository-code: "https://github.com/OSM-Notes/osm-mesh-notes-gateway"
+license: GPL-3.0
+keywords:
+  - "LoRa"
+  - "Meshtastic"
+  - "OpenStreetMap"
+  - "OSM Notes"
+  - "Raspberry Pi"
+  - "Gateway"
+  - "Store-and-forward"
+  - "Field mapping"
+type: software

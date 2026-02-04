@@ -1,0 +1,27 @@
+# Authors and Contributors
+
+This file lists the authors and contributors to the LoRa Mesh → OSM Notes Gateway project.
+
+## Original Authors
+
+The original implementation was created by the OSM-Notes project team.
+
+## Contributors
+
+Contributors are listed in chronological order of their first contribution.
+
+- Andrés Gómez Casanova <angoca en yahoo dot com> (@angoca)
+- Doris Carmiña Ruiz Ramírez
+- Angie Lorena Trujillo Guayara
+- Rafael Alberto Isturiz (@risturiz)
+<!--
+To add yourself as a contributor, add your name and (optionally) email/GitHub username:
+
+- Your Name <email@example.com> (@github-username)
+-->
+
+## How to Contribute
+
+If you contribute to this project, please add your name to this file in your pull request.
+
+For more information on contributing, see [CONTRIBUTING.md](CONTRIBUTING.md).
