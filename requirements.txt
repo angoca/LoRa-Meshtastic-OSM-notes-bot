@@ -1,3 +1,9 @@
+# Requirements file for backward compatibility
+# NOTE: pyproject.toml is the source of truth for dependencies
+# This file is auto-generated from pyproject.toml for environments that don't support PEP 621
+# To install: pip install -r requirements.txt
+# Recommended: pip install -e ".[dev]" (uses pyproject.toml)
+
 pyserial>=3.5
 protobuf>=4.25.0
 requests>=2.31.0

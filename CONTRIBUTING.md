@@ -40,9 +40,12 @@ cd osm-mesh-notes-gateway
 python3 -m venv venv
 source venv/bin/activate  # En Windows: venv\Scripts\activate
 
-# Instalar dependencias
-pip install -r requirements.txt
-pip install -e ".[dev]"  # Incluye pytest y herramientas de desarrollo
+# Instalar dependencias (pyproject.toml es la fuente de verdad)
+pip install -e ".[dev]"  # Incluye todas las dependencias + herramientas de desarrollo
+
+# O si prefieres usar requirements.txt (solo dependencias principales)
+# pip install -r requirements.txt
+# pip install pytest pytest-cov black ruff  # Herramientas de desarrollo manualmente
 ```
 
 ## Estándares de Código
@@ -85,6 +88,116 @@ def process_message(
 - **Funciones/Métodos**: `snake_case` (ej: `process_message`)
 - **Constantes**: `UPPER_SNAKE_CASE` (ej: `POS_GOOD`)
 - **Variables privadas**: Prefijo `_` (ej: `_init_db`)
+
+### Formateo y Linting
+
+El proyecto usa **Black** para formateo automático y **Ruff** para linting rápido.
+
+#### Instalación de herramientas
+
+```bash
+# Las herramientas ya están incluidas en [dev] dependencies
+pip install -e ".[dev]"
+```
+
+#### Formateo con Black
+
+```bash
+# Formatear todos los archivos
+black src/ tests/
+
+# Ver qué cambios haría sin aplicarlos
+black --check src/ tests/
+
+# Formatear un archivo específico
+black src/gateway/commands.py
+```
+
+**Configuración**: Black está configurado en `pyproject.toml` con:
+- Longitud de línea: 100 caracteres
+- Versiones objetivo: Python 3.8+
+
+#### Linting con Ruff
+
+```bash
+# Verificar todos los archivos
+ruff check src/ tests/
+
+# Auto-fix problemas que se pueden corregir automáticamente
+ruff check --fix src/ tests/
+
+# Verificar un archivo específico
+ruff check src/gateway/commands.py
+```
+
+**Configuración**: Ruff está configurado en `pyproject.toml` con reglas que cubren:
+- Errores de estilo (pycodestyle E, W)
+- Problemas comunes (pyflakes F)
+- Orden de imports (isort I)
+- Mejores prácticas (flake8-bugbear B)
+- Sugerencias de modernización (pyupgrade UP)
+
+#### Workflow recomendado
+
+Antes de hacer commit:
+
+```bash
+# 1. Formatear código
+black src/ tests/
+
+# 2. Verificar y corregir linting
+ruff check --fix src/ tests/
+
+# 3. Ejecutar tests
+pytest
+
+# 4. Si todo está bien, hacer commit
+git add .
+git commit -m "feat: descripción del cambio"
+```
+
+#### Integración con editores
+
+**VS Code / Cursor**:
+- Instalar extensiones: "Black Formatter" y "Ruff"
+- Configurar formato automático al guardar
+
+**Pre-commit hooks** (opcional):
+
+```bash
+# Instalar pre-commit
+pip install pre-commit
+
+# Crear .pre-commit-config.yaml con:
+#   - black
+#   - ruff
+#   - pytest (opcional)
+
+pre-commit install
+```
+
+### Gestión de Dependencias
+
+**Fuente de verdad**: `pyproject.toml` es la fuente canónica de dependencias.
+
+- **Dependencias principales**: Definidas en `[project.dependencies]`
+- **Dependencias de desarrollo**: Definidas en `[project.optional-dependencies.dev]`
+- **requirements.txt**: Se mantiene por compatibilidad, pero `pyproject.toml` tiene prioridad
+
+**Instalación recomendada**:
+```bash
+# Usar pyproject.toml (recomendado)
+pip install -e ".[dev]"
+
+# O solo dependencias principales
+pip install -e .
+```
+
+**Actualizar requirements.txt** (si es necesario):
+```bash
+# Generar desde pyproject.toml (manual)
+pip-compile pyproject.toml  # Requiere pip-tools
+```
 
 ## Testing
 
@@ -178,11 +291,11 @@ Crear Pull Request en [GitHub](https://github.com/OSM-Notes/osm-mesh-notes-gatew
 
 ### Checklist de PR
 
-- [ ] Código sigue estándares PEP 8
+- [ ] Código formateado con Black (`black src/ tests/`)
+- [ ] Linting pasa sin errores (`ruff check src/ tests/`)
 - [ ] Tests pasan (`pytest`)
 - [ ] Tests nuevos agregados para nueva funcionalidad
 - [ ] Documentación actualizada
-- [ ] No hay warnings de linter
 - [ ] Commits con mensajes descriptivos
 
 ## Áreas de Contribución
