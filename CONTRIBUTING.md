@@ -1,6 +1,6 @@
 # Guía de Contribución
 
-Gracias por tu interés en contribuir al proyecto LoRa-Meshtastic-OSM-notes-bot.
+Gracias por tu interés en contribuir al proyecto [osm-mesh-notes-gateway](https://github.com/OSM-Notes/osm-mesh-notes-gateway).
 
 ## Estructura del Proyecto
 
@@ -33,8 +33,8 @@ Gracias por tu interés en contribuir al proyecto LoRa-Meshtastic-OSM-notes-bot.
 
 ```bash
 # Clonar repositorio
-git clone https://github.com/tu-usuario/LoRa-Meshtastic-OSM-notes-bot.git
-cd LoRa-Meshtastic-OSM-notes-bot
+git clone https://github.com/OSM-Notes/osm-mesh-notes-gateway.git
+cd osm-mesh-notes-gateway
 
 # Crear entorno virtual
 python3 -m venv venv
@@ -170,7 +170,7 @@ git commit -m "feat: agregar nueva funcionalidad X"
 git push origin feature/nombre-de-la-feature
 ```
 
-Crear Pull Request en GitHub con:
+Crear Pull Request en [GitHub](https://github.com/OSM-Notes/osm-mesh-notes-gateway) con:
 - Descripción clara de cambios
 - Referencia a issues relacionados
 - Screenshots si aplica
@@ -246,7 +246,7 @@ python -m gateway.main
 ## Contacto
 
 Para preguntas o dudas:
-- Abrir issue en GitHub
+- Abrir issue en [GitHub](https://github.com/OSM-Notes/osm-mesh-notes-gateway/issues)
 - Revisar documentación existente
 - Consultar código de ejemplos
 

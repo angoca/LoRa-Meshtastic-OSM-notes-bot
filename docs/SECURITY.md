@@ -141,5 +141,5 @@ Ensure log files are properly secured and rotated.
 
 If you discover a security vulnerability, please:
 1. Do not open a public issue
-2. Contact the maintainers privately
+2. Contact the maintainers privately via [GitHub Security](https://github.com/OSM-Notes/osm-mesh-notes-gateway/security/advisories)
 3. Provide detailed information about the vulnerability

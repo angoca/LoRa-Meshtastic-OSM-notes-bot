@@ -277,4 +277,4 @@ Si el problema persiste:
 1. Revisar logs completos: `sudo journalctl -u lora-osmnotes --since "1 hour ago" > logs.txt`
 2. Verificar configuración: `sudo cat /var/lib/lora-osmnotes/.env`
 3. Verificar estado del sistema: `sudo systemctl status lora-osmnotes`
-4. Abrir issue en GitHub con los logs y configuración (sin datos sensibles)
+4. Abrir issue en [GitHub](https://github.com/OSM-Notes/osm-mesh-notes-gateway/issues) con los logs y configuración (sin datos sensibles)

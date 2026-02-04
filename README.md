@@ -26,8 +26,8 @@ Este gateway permite a usuarios en campo enviar reportes de mapeo usando disposi
 ### Instalación automática (recomendada)
 
 ```bash
-git clone https://github.com/tu-usuario/LoRa-Meshtastic-OSM-notes-bot.git
-cd LoRa-Meshtastic-OSM-notes-bot
+git clone https://github.com/OSM-Notes/osm-mesh-notes-gateway.git
+cd osm-mesh-notes-gateway
 sudo bash scripts/install_pi.sh
 ```
 
@@ -395,11 +395,13 @@ Ver archivo LICENSE.
 ## Contribuciones
 
 Las contribuciones son bienvenidas. Por favor:
-1. Fork el proyecto
+1. Fork el proyecto: https://github.com/OSM-Notes/osm-mesh-notes-gateway
 2. Crea una rama para tu feature
 3. Commit tus cambios
 4. Push a la rama
 5. Abre un Pull Request
+
+Ver **[CONTRIBUTING.md](CONTRIBUTING.md)** para más detalles.
 
 ## Notas importantes
 
@@ -411,4 +413,5 @@ Las contribuciones son bienvenidas. Por favor:
 
 ## Soporte
 
-Para reportar problemas o solicitar features, abre un issue en GitHub.
+Para reportar problemas o solicitar features, abre un issue en GitHub:
+https://github.com/OSM-Notes/osm-mesh-notes-gateway/issues
