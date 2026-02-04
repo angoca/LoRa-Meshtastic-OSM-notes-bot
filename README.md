@@ -92,6 +92,10 @@ El script de instalación configura todo automáticamente:
 
 1. **Detectar puerto serial**:
 ```bash
+# Usar el script de detección automática (recomendado)
+bash scripts/detect_serial.sh
+
+# O manualmente
 ls -l /dev/ttyACM* /dev/ttyUSB*
 ```
 
@@ -222,6 +226,131 @@ Para problemas comunes, consulta **[docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTIN
 
 ---
 
+## Troubleshooting Rápido
+
+### El servicio no inicia o no se conecta al dispositivo
+
+**1. Verificar logs del servicio:**
+```bash
+# Ver logs en tiempo real
+sudo journalctl -u lora-osmnotes -f
+
+# Ver últimos 50 líneas
+sudo journalctl -u lora-osmnotes -n 50
+
+# Ver logs desde hoy
+sudo journalctl -u lora-osmnotes --since today
+```
+
+**2. Verificar permisos del puerto serial:**
+```bash
+# Detectar dispositivo automáticamente
+bash scripts/detect_serial.sh
+
+# Verificar permisos manualmente
+ls -l /dev/ttyACM0  # o /dev/ttyUSB0 según tu dispositivo
+
+# Si no tienes permisos, agregar usuario a grupo dialout
+sudo usermod -a -G dialout $USER
+# IMPORTANTE: Cerrar sesión y volver a iniciar para aplicar cambios
+```
+
+**3. Verificar que el dispositivo está conectado:**
+```bash
+# Ver dispositivos USB conectados
+lsusb | grep -i meshtastic
+
+# Ver dispositivos seriales disponibles
+ls -l /dev/ttyACM* /dev/ttyUSB*
+
+# Verificar que el puerto configurado existe
+cat /var/lib/lora-osmnotes/.env | grep SERIAL_PORT
+```
+
+**4. Verificar estado del servicio:**
+```bash
+# Estado del servicio
+sudo systemctl status lora-osmnotes
+
+# Reiniciar servicio
+sudo systemctl restart lora-osmnotes
+
+# Ver si está habilitado para iniciar al arrancar
+sudo systemctl is-enabled lora-osmnotes
+```
+
+### Error: "Permission denied" o "No such file or directory"
+
+**Problema de permisos del puerto serial:**
+```bash
+# Verificar grupo del usuario actual
+groups
+
+# Si no está en dialout, agregarlo
+sudo usermod -a -G dialout $USER
+
+# CERRAR SESIÓN Y VOLVER A INICIAR (requerido)
+# Luego verificar:
+groups | grep dialout
+```
+
+**Problema de permisos del directorio de datos:**
+```bash
+# Verificar permisos
+ls -l /var/lib/lora-osmnotes
+
+# Corregir permisos (ajustar usuario según tu sistema)
+sudo chown -R $USER:$USER /var/lib/lora-osmnotes
+# O si es para el servicio:
+sudo chown -R pi:pi /var/lib/lora-osmnotes  # Ajustar según tu usuario
+```
+
+### No se reciben mensajes desde Meshtastic
+
+**Verificar conexión serial:**
+```bash
+# Usar script de detección
+bash scripts/detect_serial.sh
+
+# Probar conexión directa (requiere permisos)
+sudo screen /dev/ttyACM0 9600
+# Presionar Ctrl+A luego K para salir
+```
+
+**Verificar configuración:**
+```bash
+# Ver puerto configurado
+cat /var/lib/lora-osmnotes/.env | grep SERIAL_PORT
+
+# Ver logs para errores de conexión
+sudo journalctl -u lora-osmnotes | grep -i "serial\|connection\|error"
+```
+
+### No se envían notas a OSM
+
+**Verificar conexión a Internet:**
+```bash
+ping -c 3 api.openstreetmap.org
+curl -I https://api.openstreetmap.org/api/0.6/notes.json
+```
+
+**Verificar logs:**
+```bash
+# Buscar errores relacionados con OSM
+sudo journalctl -u lora-osmnotes | grep -i "osm\|error\|failed"
+
+# Ver estado de notas en la base de datos
+sudo sqlite3 /var/lib/lora-osmnotes/gateway.db "SELECT local_queue_id, status, last_error FROM notes WHERE status='pending' LIMIT 10;"
+```
+
+**Nota:** El sistema respeta un mínimo de 3 segundos entre envíos. Si hay muchas notas pendientes, puede tardar.
+
+### Más ayuda
+
+Para problemas más complejos o detallados, consulta la **[guía completa de troubleshooting](docs/TROUBLESHOOTING.md)**.
+
+---
+
 ## Notas Técnicas
 
 ### Validación GPS
@@ -252,7 +381,9 @@ El sistema usa SQLite para almacenar reportes localmente cuando no hay Internet,
 .
 ├── src/gateway/          # Código fuente principal
 ├── tests/                # Tests con pytest
-├── scripts/              # Scripts de instalación
+├── scripts/              # Scripts de instalación y utilidades
+│   ├── install_pi.sh    # Instalación automática
+│   └── detect_serial.sh # Detección de dispositivos seriales
 ├── systemd/              # Archivos systemd
 ├── docs/                 # Documentación técnica
 ├── README.md             # Este archivo
