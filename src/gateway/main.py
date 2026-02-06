@@ -207,9 +207,13 @@ class Gateway:
         """Check if daily broadcast should be sent."""
         now = datetime.now()
         if self.last_broadcast is None or (now - self.last_broadcast) >= timedelta(hours=24):
-            if self.serial.send_broadcast(MSG_DAILY_BROADCAST):
+            # MSG_DAILY_BROADCAST is a tuple, join it to string
+            broadcast_msg = "".join(MSG_DAILY_BROADCAST) if isinstance(MSG_DAILY_BROADCAST, tuple) else MSG_DAILY_BROADCAST
+            if self.serial.send_broadcast(broadcast_msg):
                 self.last_broadcast = now
                 logger.info("Sent daily broadcast")
+            else:
+                logger.warning("Failed to send daily broadcast (send_broadcast returned False)")
 
     def start(self):
         """Start the gateway."""
