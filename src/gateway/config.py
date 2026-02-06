@@ -5,7 +5,19 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 # Load environment variables
-load_dotenv()
+# Try to load from standard locations
+env_paths = [
+    Path("/var/lib/lora-osmnotes/.env"),  # Production location
+    Path(".env"),  # Current directory
+    Path(__file__).parent.parent.parent / ".env",  # Project root
+]
+for env_path in env_paths:
+    if env_path.exists():
+        load_dotenv(env_path)
+        break
+else:
+    # Fallback: try default load_dotenv() behavior
+    load_dotenv()
 
 # Base directory for data
 DATA_DIR = Path(os.getenv("DATA_DIR", "/var/lib/lora-osmnotes"))
