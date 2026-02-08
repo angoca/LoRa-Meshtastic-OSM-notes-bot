@@ -127,117 +127,92 @@ class MeshtasticSerial:
             pub.unsubscribe(self._on_receive_position, "meshtastic.receive.position")
         self.disconnect()
 
-    def _on_receive(self, packet, interface):
-        """Handle received packet from Meshtastic."""
+    def _on_receive_text(self, packet, interface):
+        """Handle received text message from Meshtastic."""
         if not self.running or not self.message_callback:
             return
 
         try:
-            # Extract message data - meshtastic-python may provide decoded data directly
-            # or we need to check if packet has 'decoded' key
+            # meshtastic.receive.text provides decoded text messages
             decoded = packet.get("decoded", {})
+            text = decoded.get("text", "")
+            from_node = packet.get("from")
             
-            # If decoded is empty but packet has other keys, it might be a raw packet
-            # meshtastic-python should decode it automatically, but check both formats
-            if not decoded and "encrypted" in packet:
-                # Packet is encrypted, meshtastic-python should decode it
-                # Skip encrypted packets that aren't decoded yet
-                logger.debug("Received encrypted packet (not decoded yet)")
-                return
-            
-            portnum = decoded.get("portnum")
-            
-            # Skip if no portnum (not a data packet)
-            if portnum is None:
+            if not from_node or not text:
                 return
 
-            # Handle text messages (portnum can be string "TEXT_MESSAGE_APP" or number 1)
-            if portnum == "TEXT_MESSAGE_APP" or (isinstance(portnum, int) and portnum == 1):
-                text = decoded.get("text", "")
-                from_node = packet.get("from")
-                
-                if not from_node or not text:
-                    return
+            # Convert node number to string format (Meshtastic uses 8-char hex)
+            if isinstance(from_node, int):
+                # Format as !12345678 (8 hex chars, lowercase)
+                node_id = f"!{from_node:08x}"
+            else:
+                node_id = str(from_node)
+                # Ensure it starts with ! if it's a hex string
+                if not node_id.startswith("!") and len(node_id) > 0:
+                    node_id = f"!{node_id}"
 
-                # Convert node number to string format (Meshtastic uses 8-char hex)
-                if isinstance(from_node, int):
-                    # Format as !12345678 (8 hex chars, lowercase)
-                    node_id = f"!{from_node:08x}"
-                else:
-                    node_id = str(from_node)
-                    # Ensure it starts with ! if it's a hex string
-                    if not node_id.startswith("!") and len(node_id) > 0:
-                        node_id = f"!{node_id}"
+            # Get position from cache if available
+            position = self.position_cache.get(node_id, {})
+            lat = position.get("lat")
+            lon = position.get("lon")
 
-                # Get position from cache if available
-                position = self.position_cache.get(node_id, {})
-                lat = position.get("lat")
-                lon = position.get("lon")
+            logger.info(f"Received message from {node_id}: {text[:50]}...")
 
-                logger.info(f"Received message from {node_id}: {text[:50]}...")
-
-                # Call callback with message data
-                self.message_callback({
-                    "node_id": node_id,
-                    "lat": lat,
-                    "lon": lon,
-                    "text": text,
-                    "timestamp": time.time(),
-                })
-
-            # Handle position updates (portnum can be string "POSITION_APP" or number)
-            elif portnum == "POSITION_APP" or (isinstance(portnum, int) and portnum == 3):
-                from_node = packet.get("from")
-                position_data = decoded.get("position", {})
-                
-                if from_node and position_data:
-                    if isinstance(from_node, int):
-                        node_id = f"!{from_node:08x}"
-                    else:
-                        node_id = str(from_node)
-                        if not node_id.startswith("!") and len(node_id) > 0:
-                            node_id = f"!{node_id}"
-                    
-                    # Extract position (Meshtastic uses integer coordinates)
-                    lat_i = position_data.get("latitudeI")
-                    lon_i = position_data.get("longitudeI")
-                    
-                    if lat_i is not None and lon_i is not None:
-                        # Convert from integer (1e-7 degrees) to float
-                        lat = lat_i / 1e7
-                        lon = lon_i / 1e7
-                        
-                        # Update position cache
-                        with self._lock:
-                            self.position_cache[node_id] = {
-                                "lat": lat,
-                                "lon": lon,
-                                "timestamp": time.time(),
-                            }
-                        
-                        logger.debug(f"Updated position for {node_id}: {lat}, {lon}")
-
-            # Handle telemetry (may contain position) (portnum can be string "TELEMETRY_APP" or number)
-            elif portnum == "TELEMETRY_APP" or (isinstance(portnum, int) and portnum == 67):
-                from_node = packet.get("from")
-                telemetry = decoded.get("telemetry", {})
-                
-                if from_node and telemetry:
-                    if isinstance(from_node, int):
-                        node_id = f"!{from_node:08x}"
-                    else:
-                        node_id = str(from_node)
-                        if not node_id.startswith("!") and len(node_id) > 0:
-                            node_id = f"!{node_id}"
-                    
-                    # Check for position in device metrics
-                    device_metrics = telemetry.get("device")
-                    if device_metrics:
-                        # Telemetry doesn't directly contain position, but we log it
-                        logger.debug(f"Received telemetry from {node_id}")
+            # Call callback with message data
+            self.message_callback({
+                "node_id": node_id,
+                "lat": lat,
+                "lon": lon,
+                "text": text,
+                "timestamp": time.time(),
+            })
 
         except Exception as e:
-            logger.error(f"Error processing packet: {e}")
+            logger.error(f"Error processing text message: {e}")
+
+    def _on_receive_position(self, packet, interface):
+        """Handle received position update from Meshtastic."""
+        if not self.running:
+            return
+
+        try:
+            # meshtastic.receive.position provides decoded position messages
+            decoded = packet.get("decoded", {})
+            position_data = decoded.get("position", {})
+            from_node = packet.get("from")
+            
+            if not from_node or not position_data:
+                return
+
+            # Convert node number to string format
+            if isinstance(from_node, int):
+                node_id = f"!{from_node:08x}"
+            else:
+                node_id = str(from_node)
+                if not node_id.startswith("!") and len(node_id) > 0:
+                    node_id = f"!{node_id}"
+            
+            # Extract position (Meshtastic uses integer coordinates)
+            lat_i = position_data.get("latitudeI")
+            lon_i = position_data.get("longitudeI")
+            
+            if lat_i is not None and lon_i is not None:
+                # Convert from integer (1e-7 degrees) to float
+                lat = lat_i / 1e7
+                lon = lon_i / 1e7
+                
+                # Update position cache
+                with self._lock:
+                    self.position_cache[node_id] = {
+                        "lat": lat,
+                        "lon": lon,
+                        "timestamp": time.time(),
+                    }
+                
+                logger.debug(f"Updated position for {node_id}: {lat}, {lon}")
+
+        except Exception as e:
+            logger.error(f"Error processing position message: {e}")
 
     def send_dm(self, node_id: str, message: str) -> bool:
         """Send direct message to a node."""
