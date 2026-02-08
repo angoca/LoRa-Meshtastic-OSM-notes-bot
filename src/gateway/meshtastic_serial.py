@@ -7,7 +7,6 @@ from typing import Optional, Callable, Dict, Any
 
 try:
     import meshtastic.serial_interface
-    import meshtastic.tunnel_interface
     MESHTASTIC_AVAILABLE = True
 except ImportError:
     MESHTASTIC_AVAILABLE = False
