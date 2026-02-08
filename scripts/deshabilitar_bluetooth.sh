@@ -10,8 +10,35 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
-# Get serial port from argument or use default
-SERIAL_PORT="${1:-/dev/ttyACM0}"
+# Function to detect serial port automatically
+detect_serial_port() {
+    # First, try to get from .env file
+    if [ -f "/var/lib/lora-osmnotes/.env" ]; then
+        ENV_PORT=$(grep "^SERIAL_PORT=" /var/lib/lora-osmnotes/.env 2>/dev/null | cut -d'=' -f2 | tr -d '"' | tr -d "'" | tr -d ' ')
+        if [ -n "$ENV_PORT" ] && [ -e "$ENV_PORT" ]; then
+            echo "$ENV_PORT"
+            return
+        fi
+    fi
+    
+    # Try to find first available USB device (ttyUSB* first, then ttyACM*)
+    for device in /dev/ttyUSB* /dev/ttyACM*; do
+        if [ -e "$device" ]; then
+            echo "$device"
+            return
+        fi
+    done
+    
+    # Default fallback
+    echo "/dev/ttyUSB0"
+}
+
+# Get serial port from argument or auto-detect
+if [ -n "$1" ]; then
+    SERIAL_PORT="$1"
+else
+    SERIAL_PORT=$(detect_serial_port)
+fi
 
 # Check if running as root
 if [ "$EUID" -ne 0 ]; then 
@@ -27,8 +54,14 @@ echo ""
 # Check if device exists
 if [ ! -e "$SERIAL_PORT" ]; then
     echo -e "${RED}Error: Device $SERIAL_PORT not found${NC}"
+    echo ""
+    echo "Available devices:"
+    ls -l /dev/ttyUSB* /dev/ttyACM* 2>/dev/null || echo "  No serial devices found"
     exit 1
 fi
+
+echo "Using device: $SERIAL_PORT"
+echo ""
 
 # Check if meshtastic CLI is available
 MESHTASTIC_CMD=""

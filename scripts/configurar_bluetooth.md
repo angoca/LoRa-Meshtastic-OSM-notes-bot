@@ -16,8 +16,13 @@ ssh usuario@192.168.2.121
 cd /ruta/al/proyecto/LoRa-Meshtastic-OSM-notes-bot
 sudo bash scripts/habilitar_bluetooth.sh
 
-# O especificar el puerto manualmente
-sudo bash scripts/habilitar_bluetooth.sh /dev/ttyACM0
+# El script detecta automáticamente:
+# - Primero busca en /var/lib/lora-osmnotes/.env (SERIAL_PORT)
+# - Luego busca /dev/ttyUSB* (Heltec V3 generalmente usa este)
+# - Finalmente busca /dev/ttyACM* (otros dispositivos)
+
+# O especificar el puerto manualmente si es necesario
+sudo bash scripts/habilitar_bluetooth.sh /dev/ttyUSB0
 ```
 
 El script:
@@ -37,8 +42,10 @@ sudo systemctl stop lora-osmnotes
 # 2. Esperar un momento para que libere el puerto
 sleep 2
 
-# 3. Habilitar Bluetooth
-sudo /opt/lora-osmnotes/bin/meshtastic --port /dev/ttyACM0 --set bluetooth.enabled true
+# 3. Habilitar Bluetooth (Heltec V3 generalmente usa /dev/ttyUSB0)
+sudo /opt/lora-osmnotes/bin/meshtastic --port /dev/ttyUSB0 --set bluetooth.enabled true
+# Si tu dispositivo usa otro puerto, ajusta según corresponda:
+# sudo /opt/lora-osmnotes/bin/meshtastic --port /dev/ttyACM0 --set bluetooth.enabled true
 
 # 4. Esperar a que el dispositivo reinicie (5 segundos)
 sleep 5
@@ -51,6 +58,10 @@ sudo systemctl start lora-osmnotes
 
 1. **Desde el Raspberry Pi:**
    ```bash
+   # Para Heltec V3 (generalmente /dev/ttyUSB0)
+   sudo /opt/lora-osmnotes/bin/meshtastic --port /dev/ttyUSB0 --info | grep -i bluetooth
+   
+   # O si usa otro puerto:
    sudo /opt/lora-osmnotes/bin/meshtastic --port /dev/ttyACM0 --info | grep -i bluetooth
    ```
 
@@ -71,7 +82,8 @@ sudo bash scripts/deshabilitar_bluetooth.sh
 O manualmente:
 ```bash
 sudo systemctl stop lora-osmnotes
-sudo /opt/lora-osmnotes/bin/meshtastic --port /dev/ttyACM0 --set bluetooth.enabled false
+# Para Heltec V3 (generalmente /dev/ttyUSB0)
+sudo /opt/lora-osmnotes/bin/meshtastic --port /dev/ttyUSB0 --set bluetooth.enabled false
 sudo systemctl start lora-osmnotes
 ```
 
@@ -81,26 +93,29 @@ sudo systemctl start lora-osmnotes
 
 ```bash
 # Modo PIN aleatorio (por defecto)
-sudo /opt/lora-osmnotes/bin/meshtastic --port /dev/ttyACM0 --set bluetooth.mode RANDOM_PIN
+# Para Heltec V3 (generalmente /dev/ttyUSB0)
+sudo /opt/lora-osmnotes/bin/meshtastic --port /dev/ttyUSB0 --set bluetooth.mode RANDOM_PIN
 
 # Modo PIN fijo
-sudo /opt/lora-osmnotes/bin/meshtastic --port /dev/ttyACM0 --set bluetooth.mode FIXED_PIN
+sudo /opt/lora-osmnotes/bin/meshtastic --port /dev/ttyUSB0 --set bluetooth.mode FIXED_PIN
 
 # Sin PIN (menos seguro)
-sudo /opt/lora-osmnotes/bin/meshtastic --port /dev/ttyACM0 --set bluetooth.mode NO_PIN
+sudo /opt/lora-osmnotes/bin/meshtastic --port /dev/ttyUSB0 --set bluetooth.mode NO_PIN
 ```
 
 ### Configurar PIN fijo
 
 ```bash
 # Establecer PIN fijo (ejemplo: 111111)
-sudo /opt/lora-osmnotes/bin/meshtastic --port /dev/ttyACM0 --set bluetooth.fixed_pin 111111
+# Para Heltec V3 (generalmente /dev/ttyUSB0)
+sudo /opt/lora-osmnotes/bin/meshtastic --port /dev/ttyUSB0 --set bluetooth.fixed_pin 111111
 ```
 
 ### Configurar múltiples opciones a la vez
 
 ```bash
-sudo /opt/lora-osmnotes/bin/meshtastic --port /dev/ttyACM0 \
+# Para Heltec V3 (generalmente /dev/ttyUSB0)
+sudo /opt/lora-osmnotes/bin/meshtastic --port /dev/ttyUSB0 \
   --set bluetooth.enabled true \
   --set bluetooth.mode FIXED_PIN \
   --set bluetooth.fixed_pin 123456
@@ -114,10 +129,14 @@ sudo /opt/lora-osmnotes/bin/meshtastic --port /dev/ttyACM0 \
 
 ```bash
 # Verificar qué dispositivos están disponibles
-ls -l /dev/ttyACM* /dev/ttyUSB*
+# Heltec V3 generalmente aparece como /dev/ttyUSB0 o /dev/ttyUSB1
+ls -l /dev/ttyUSB* /dev/ttyACM*
 
-# Usar el script de detección
+# Usar el script de detección automática
 bash scripts/detect_serial.sh
+
+# Ver qué puerto está configurado en el servicio
+cat /var/lib/lora-osmnotes/.env | grep SERIAL_PORT
 ```
 
 ### Error: "Permission denied"

@@ -349,6 +349,12 @@ class CommandProcessor:
 
         # Get position from cache
         position = self.position_cache.get(node_id)
+        logger.debug(f"Position cache lookup for {node_id}: {position}")
+        
+        if position:
+            logger.debug(f"Position found in cache for {node_id}: lat={position.lat}, lon={position.lon}, age={self.position_cache.get_age(node_id)}s")
+        else:
+            logger.warning(f"No position found in cache for {node_id}")
         
         # If GPS validation is disabled, use a default position (Bogotá center)
         if GPS_VALIDATION_DISABLED:

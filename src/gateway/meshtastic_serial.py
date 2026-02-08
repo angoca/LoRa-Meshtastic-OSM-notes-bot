@@ -224,27 +224,39 @@ class MeshtasticSerial:
                         try:
                             node_num = int(node_id[1:], 16)
                         except ValueError:
-                            pass
+                            logger.debug(f"Could not parse node_id {node_id} to node number")
                     
                     if node_num:
+                        logger.debug(f"Looking up node info for {node_id} (node_num={node_num})")
                         node_info = self.interface.nodes.get(node_num)
                         if node_info:
+                            logger.debug(f"Node info for {node_id}: {list(node_info.keys())}")
+                            
                             # Check for device metrics with uptime
                             device_metrics = node_info.get("deviceMetrics")
                             if device_metrics:
                                 device_uptime = device_metrics.get("uptimeSeconds")
+                                logger.debug(f"Device uptime for {node_id}: {device_uptime} seconds")
+                            else:
+                                logger.debug(f"No deviceMetrics found for {node_id}")
                             
                             # Try to get position from nodeinfo if not in cache
                             if lat is None or lon is None:
                                 position_info = node_info.get("position")
+                                logger.debug(f"Position info for {node_id}: {position_info}")
+                                
                                 if position_info:
                                     # Position can be in different formats
                                     if "latitudeI" in position_info and "longitudeI" in position_info:
                                         lat_i = position_info.get("latitudeI")
                                         lon_i = position_info.get("longitudeI")
+                                        logger.debug(f"Position integers for {node_id}: lat_i={lat_i}, lon_i={lon_i}")
+                                        
                                         if lat_i is not None and lon_i is not None:
                                             lat = lat_i / 1e7
                                             lon = lon_i / 1e7
+                                            logger.info(f"Got position from nodeinfo for {node_id}: ({lat}, {lon})")
+                                            
                                             # Update cache with position from nodeinfo
                                             if self._use_position_cache:
                                                 self.position_cache.update(node_id, lat, lon)
@@ -255,11 +267,22 @@ class MeshtasticSerial:
                                                         "lon": lon,
                                                         "timestamp": time.time(),
                                                     }
-                                            logger.debug(f"Got position from nodeinfo for {node_id}: ({lat}, {lon})")
+                                            logger.info(f"Updated position cache from nodeinfo for {node_id}")
+                                        else:
+                                            logger.debug(f"Position integers are None for {node_id}")
+                                    else:
+                                        logger.debug(f"Position info for {node_id} doesn't have latitudeI/longitudeI: {list(position_info.keys())}")
+                                else:
+                                    logger.warning(f"No position info in nodeinfo for {node_id}")
+                        else:
+                            logger.debug(f"No node info found for {node_id} (node_num={node_num})")
+                    else:
+                        logger.debug(f"Could not determine node_num for {node_id}")
             except Exception as e:
-                logger.debug(f"Could not get device info for {node_id}: {e}")
+                logger.warning(f"Could not get device info for {node_id}: {e}", exc_info=True)
 
             logger.info(f"Received message from {node_id}: {text[:50]}...")
+            logger.debug(f"Position for {node_id} when processing message: lat={lat}, lon={lon}")
 
             # Call callback with message data
             self.message_callback({
