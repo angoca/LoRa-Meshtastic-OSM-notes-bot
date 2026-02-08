@@ -66,32 +66,51 @@ class GeocodingService:
                 data = response.json()
                 address = data.get("address", {})
                 
-                # Build address string from components
-                # Priority: neighbourhood/suburb > city > state > country
+                # Build address string from components with detailed hierarchy
+                # Priority: neighbourhood/suburb > district/locality > city > state > country
                 parts = []
                 
-                # Try different address component names
+                # Level 1: Most specific - neighbourhood/barrio
                 neighbourhood = (
                     address.get("neighbourhood") or
                     address.get("suburb") or
                     address.get("quarter") or
-                    address.get("village")
+                    address.get("village") or
+                    address.get("residential") or
+                    address.get("city_district")
                 )
                 if neighbourhood:
                     parts.append(neighbourhood)
                 
+                # Level 2: District/Locality (for Bogotá: localidades como Suba, Usaquén, etc.)
+                district = (
+                    address.get("district") or
+                    address.get("locality") or
+                    address.get("city_district") or
+                    address.get("subdistrict")
+                )
+                # Only add if different from neighbourhood and not already a city
+                if district and district != neighbourhood:
+                    # Check if district is actually a city-level name (avoid duplicates)
+                    city_name = address.get("city") or address.get("town") or address.get("municipality")
+                    if not city_name or district != city_name:
+                        parts.append(district)
+                
+                # Level 3: City/Municipality
                 city = (
                     address.get("city") or
                     address.get("town") or
                     address.get("municipality")
                 )
-                if city and city != neighbourhood:
+                if city and city != neighbourhood and city != district:
                     parts.append(city)
                 
+                # Level 4: State/Department
                 state = address.get("state") or address.get("region")
                 if state:
                     parts.append(state)
                 
+                # Level 5: Country
                 country = address.get("country")
                 if country:
                     parts.append(country)
