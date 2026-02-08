@@ -43,6 +43,7 @@ class MeshtasticSerial:
         port: str = SERIAL_PORT,
         baudrate: int = 9600,  # Not used with meshtastic library, kept for compatibility
         timeout: float = 1.0,  # Not used with meshtastic library, kept for compatibility
+        position_cache=None,  # Optional PositionCache to use instead of internal dict
     ):
         if not MESHTASTIC_AVAILABLE:
             raise ImportError(
@@ -54,7 +55,11 @@ class MeshtasticSerial:
         self.running = False
         self.reconnect_delay = 5.0
         self.message_callback: Optional[Callable[[Dict[str, Any]], None]] = None
-        self.position_cache: Dict[str, Dict[str, Any]] = {}  # node_id -> {lat, lon, timestamp}
+        # Use provided PositionCache if available, otherwise use simple dict for backward compatibility
+        self.position_cache = position_cache
+        self._use_position_cache = position_cache is not None
+        if not self._use_position_cache:
+            self.position_cache: Dict[str, Dict[str, Any]] = {}  # node_id -> {lat, lon, timestamp}
         self._lock = threading.Lock()
 
     def set_message_callback(self, callback: Callable[[Dict[str, Any]], None]):
@@ -198,9 +203,16 @@ class MeshtasticSerial:
                     node_id = f"!{node_id}"
 
             # Get position from cache if available
-            position = self.position_cache.get(node_id, {})
-            lat = position.get("lat")
-            lon = position.get("lon")
+            if self._use_position_cache:
+                # Use PositionCache API
+                pos = self.position_cache.get(node_id)
+                lat = pos.lat if pos else None
+                lon = pos.lon if pos else None
+            else:
+                # Use simple dict cache (backward compatibility)
+                position = self.position_cache.get(node_id, {})
+                lat = position.get("lat")
+                lon = position.get("lon")
 
             # Try to get device uptime from node info
             device_uptime = None
@@ -263,11 +275,16 @@ class MeshtasticSerial:
                 
                 # Update position cache
                 with self._lock:
-                    self.position_cache[node_id] = {
-                        "lat": lat,
-                        "lon": lon,
-                        "timestamp": time.time(),
-                    }
+                    if self._use_position_cache:
+                        # Use PositionCache API
+                        self.position_cache.update(node_id, lat, lon)
+                    else:
+                        # Use simple dict cache (backward compatibility)
+                        self.position_cache[node_id] = {
+                            "lat": lat,
+                            "lon": lon,
+                            "timestamp": time.time(),
+                        }
                 
                 logger.debug(f"Updated position for {node_id}: {lat}, {lon}")
 

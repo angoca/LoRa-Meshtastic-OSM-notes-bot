@@ -62,7 +62,8 @@ class Gateway:
         self.db = Database()
         # PositionCache now uses the same database for persistence
         self.position_cache = PositionCache(db=self.db)
-        self.serial = MeshtasticSerial()
+        # Pass PositionCache to MeshtasticSerial so both use the same cache
+        self.serial = MeshtasticSerial(position_cache=self.position_cache)
         self.command_processor = CommandProcessor(self.db, self.position_cache)
         self.osm_worker = OSMWorker(self.db)
         self.notifications = NotificationManager(self.serial, self.db)
