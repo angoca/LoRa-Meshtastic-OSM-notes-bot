@@ -78,7 +78,11 @@ MSG_DUPLICATE = (
 MSG_HELP = (
     "ℹ️ Para crear una nota de mapeo escribe:\n"
     "#osmnote <tu mensaje>\n\n"
-    "Usa #osmstatus para ver estado.\n\n"
+    "💡 Consejo rápido: Configura un mensaje predefinido en la app:\n"
+    "Settings → Canned Message → Messages: #osmnote \n"
+    "Así evitas errores al escribir el hashtag.\n\n"
+    "Usa #osmstatus para ver estado.\n"
+    "Usa #osmmorehelp para más información.\n\n"
     "📱 Configuración T‑Echo recomendada:\n"
     "• Position Broadcast: 60 segundos (mínimo)\n"
     "• Smart Broadcast Min Interval: 15 segundos\n"
@@ -89,6 +93,27 @@ MSG_HELP = (
     "Radio → Position → Smart Broadcast Min Interval: 15\n"
     "Radio → Position → Smart Broadcast Min Distance: 100\n"
     "Device → GPS → Update Interval: 120\n\n"
+    "⚠️ No envíes datos personales ni emergencias médicas."
+)
+
+MSG_MORE_HELP = (
+    "ℹ️ Información adicional:\n\n"
+    "📝 Mensajes predefinidos (Canned Messages):\n"
+    "Para facilitar el envío de reportes, configura un mensaje predefinido:\n\n"
+    "1. Abre la app Meshtastic\n"
+    "2. Ve a Settings → Canned Message\n"
+    "3. En Messages, escribe: #osmnote \n"
+    "4. Activa Enabled\n\n"
+    "Luego selecciona el mensaje predefinido y escribe tu reporte después.\n"
+    "Esto evita errores comunes como espacios o caracteres incorrectos.\n\n"
+    "📋 Comandos disponibles:\n"
+    "• #osmnote <mensaje> - Crear nota OSM\n"
+    "• #osmstatus - Ver estado del gateway\n"
+    "• #osmcount - Ver conteo de notas\n"
+    "• #osmlist [n] - Listar últimas notas (default: 5, max: 20)\n"
+    "• #osmqueue - Ver tamaño de cola\n"
+    "• #osmhelp - Ayuda básica\n"
+    "• #osmmorehelp - Esta ayuda extendida\n\n"
     "⚠️ No envíes datos personales ni emergencias médicas."
 )
 
@@ -111,8 +136,11 @@ class CommandProcessor:
     # Hashtag variants for osmnote
     OSMNOTE_VARIANTS = [
         r"#osmnote\b",
+        r"#osmnotes\b",  # Plural variant (common typo)
         r"#osm-note\b",
+        r"#osm-notes\b",  # Plural variant with hyphen
         r"#osm_note\b",
+        r"#osm_notes\b",  # Plural variant with underscore
     ]
 
     def __init__(self, db: Database, position_cache: PositionCache):
@@ -179,7 +207,7 @@ class CommandProcessor:
         Returns:
             Tuple of (command_type, response_message):
             - command_type: One of 'osmnote', 'osmnote_queued', 'osmnote_reject',
-              'osmnote_duplicate', 'osmhelp', 'osmstatus', 'osmcount', 'osmlist',
+              'osmnote_duplicate', 'osmhelp', 'osmmorehelp', 'osmstatus', 'osmcount', 'osmlist',
               'osmqueue', 'ignore'
             - response_message: Response text for commands, queue_id for osmnote_queued,
               or None for ignored messages
@@ -188,6 +216,9 @@ class CommandProcessor:
             >>> processor.process_message("node1", "#osmhelp")
             ('osmhelp', 'ℹ️ Para crear una nota...')
             
+            >>> processor.process_message("node1", "#osmmorehelp")
+            ('osmmorehelp', 'ℹ️ Información adicional...')
+
             >>> processor.process_message("node1", "#osmnote test", lat=1.0, lon=2.0)
             ('osmnote_queued', 'Q-0001')
         """
@@ -204,6 +235,9 @@ class CommandProcessor:
         # Check for commands
         if text_lower == "#osmhelp":
             return "osmhelp", MSG_HELP
+
+        if text_lower == "#osmmorehelp":
+            return "osmmorehelp", MSG_MORE_HELP
 
         if text_lower == "#osmstatus":
             return self._handle_status(node_id)

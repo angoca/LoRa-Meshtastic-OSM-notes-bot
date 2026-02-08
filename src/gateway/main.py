@@ -119,7 +119,7 @@ class Gateway:
         if command_type == "ignore":
             return
 
-        if command_type in ["osmhelp", "osmstatus", "osmcount", "osmlist", "osmqueue"]:
+        if command_type in ["osmhelp", "osmmorehelp", "osmstatus", "osmcount", "osmlist", "osmqueue"]:
             if response:
                 self.notifications.send_command_response(node_id, response)
 
