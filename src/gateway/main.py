@@ -33,6 +33,14 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 
+# Configure meshtastic library logging level
+# Set meshtastic loggers to WARNING to reduce noise (they use DEBUG by default)
+meshtastic_log_level = getattr(logging, LOG_LEVEL.upper(), logging.INFO)
+# If LOG_LEVEL is INFO or higher, set meshtastic to WARNING to reduce verbose output
+if meshtastic_log_level <= logging.INFO:
+    meshtastic_log_level = logging.WARNING
+logging.getLogger("meshtastic").setLevel(meshtastic_log_level)
+
 logger = logging.getLogger(__name__)
 
 
