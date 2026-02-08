@@ -397,8 +397,13 @@ class CommandProcessor:
                     )
             return "osmnote_reject", MSG_REJECT_STALE_GPS
 
-        # Determine if position is approximate
-        is_approximate = POS_GOOD < pos_age <= POS_MAX
+        # Determine if position is approximate (only if GPS validation is enabled)
+        is_approximate = False
+        if not GPS_VALIDATION_DISABLED:
+            pos_age = self.position_cache.get_age(node_id)
+            if pos_age is not None:
+                is_approximate = POS_GOOD < pos_age <= POS_MAX
+        
         if is_approximate:
             text_normalized = f"[posición aproximada] {text_normalized}"
 
@@ -409,8 +414,8 @@ class CommandProcessor:
         if self.db.check_duplicate(
             node_id,
             text_normalized,
-            position.lat,
-            position.lon,
+            lat,
+            lon,
             time_bucket,
         ):
             return "osmnote_duplicate", MSG_DUPLICATE
