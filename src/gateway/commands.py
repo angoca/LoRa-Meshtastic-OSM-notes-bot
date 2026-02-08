@@ -389,7 +389,7 @@ class CommandProcessor:
             pos_age = self.position_cache.get_age(node_id)
             if pos_age is None or pos_age > POS_MAX:
                 # Check if device was recently started
-            if device_uptime is not None and device_uptime < DEVICE_UPTIME_RECENT:
+                if device_uptime is not None and device_uptime < DEVICE_UPTIME_RECENT:
                 wait_time = int(DEVICE_UPTIME_GPS_WAIT - device_uptime)
                 if wait_time > 0:
                     return "osmnote_reject", MSG_REJECT_NO_GPS_RECENT_START.format(
