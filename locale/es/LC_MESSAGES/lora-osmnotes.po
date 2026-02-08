@@ -303,6 +303,9 @@ msgstr "❌ Error al cambiar idioma"
 msgid "❌ Idioma inválido. Usa: #osmlang es o #osmlang en\nInvalid language. Use: #osmlang es or #osmlang en"
 msgstr "❌ Idioma inválido. Usa: #osmlang es o #osmlang en"
 
+msgid "\n\n---\nCreado mediante OSM Mesh Notes Gateway (LoRa mesh → OSM Notes)"
+msgstr "\n\n---\nCreado mediante OSM Mesh Notes Gateway (LoRa mesh → OSM Notes)"
+
 msgid "🌐 Idioma actual / Current language: {lang}"
 msgstr "🌐 Idioma actual: {lang}"
 

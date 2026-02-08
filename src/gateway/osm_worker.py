@@ -12,6 +12,7 @@ from .config import (
     OSM_MAX_RETRIES, OSM_RETRY_DELAY_SECONDS,
 )
 from .database import Database
+from .i18n import _
 
 logger = logging.getLogger(__name__)
 
@@ -71,11 +72,17 @@ class OSMWorker:
             time.sleep(sleep_time)
 
         try:
+            # Add project attribution to note text (translated to user's language)
+            if locale is None:
+                locale = "es"  # Default to Spanish
+            attribution = _("\n\n---\nCreado mediante OSM Mesh Notes Gateway (LoRa mesh → OSM Notes)", locale)
+            note_text = text + attribution
+            
             # Prepare request
             payload = {
                 "lat": lat,
                 "lon": lon,
-                "text": text,
+                "text": note_text,
             }
 
             logger.info(f"Sending note to OSM: ({lat}, {lon}) - {text[:50]}...")
@@ -179,10 +186,14 @@ class OSMWorker:
                 del self.retry_counts[queue_id]
                 continue
             
+            # Get user's preferred language for attribution
+            user_locale = self.db.get_user_language(note["node_id"])
+            
             result = self.send_note(
                 lat=note["lat"],
                 lon=note["lon"],
                 text=note["text_normalized"],
+                locale=user_locale,
             )
 
             if result:

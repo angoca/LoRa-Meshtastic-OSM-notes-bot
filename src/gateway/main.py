@@ -163,10 +163,14 @@ class Gateway:
             if not note or note["status"] != "pending":
                 return None
 
+            # Get user's preferred language for attribution
+            user_locale = self.db.get_user_language(note["node_id"])
+            
             result = self.osm_worker.send_note(
                 lat=note["lat"],
                 lon=note["lon"],
                 text=note["text_normalized"],
+                locale=user_locale,
             )
 
             if result:

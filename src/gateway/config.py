@@ -92,3 +92,6 @@ DAILY_BROADCAST_ENABLED = os.getenv("DAILY_BROADCAST_ENABLED", "false").lower() 
 
 # Internationalization (i18n)
 LANGUAGE = os.getenv("LANGUAGE", "es")  # Default: Spanish
+
+# Project information
+PROJECT_NAME = "OSM Mesh Notes Gateway"
