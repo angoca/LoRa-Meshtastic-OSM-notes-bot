@@ -214,18 +214,50 @@ class MeshtasticSerial:
                 lat = position.get("lat")
                 lon = position.get("lon")
 
-            # Try to get device uptime from node info
+            # Try to get device uptime and position from node info
             device_uptime = None
             try:
                 if self.interface:
-                    node_info = self.interface.nodes.get(node_id)
-                    if node_info:
-                        # Check for device metrics with uptime
-                        device_metrics = node_info.get("deviceMetrics")
-                        if device_metrics:
-                            device_uptime = device_metrics.get("uptimeSeconds")
+                    # Try to get node info by node number (convert from node_id)
+                    node_num = None
+                    if node_id.startswith("!"):
+                        try:
+                            node_num = int(node_id[1:], 16)
+                        except ValueError:
+                            pass
+                    
+                    if node_num:
+                        node_info = self.interface.nodes.get(node_num)
+                        if node_info:
+                            # Check for device metrics with uptime
+                            device_metrics = node_info.get("deviceMetrics")
+                            if device_metrics:
+                                device_uptime = device_metrics.get("uptimeSeconds")
+                            
+                            # Try to get position from nodeinfo if not in cache
+                            if lat is None or lon is None:
+                                position_info = node_info.get("position")
+                                if position_info:
+                                    # Position can be in different formats
+                                    if "latitudeI" in position_info and "longitudeI" in position_info:
+                                        lat_i = position_info.get("latitudeI")
+                                        lon_i = position_info.get("longitudeI")
+                                        if lat_i is not None and lon_i is not None:
+                                            lat = lat_i / 1e7
+                                            lon = lon_i / 1e7
+                                            # Update cache with position from nodeinfo
+                                            if self._use_position_cache:
+                                                self.position_cache.update(node_id, lat, lon)
+                                            else:
+                                                with self._lock:
+                                                    self.position_cache[node_id] = {
+                                                        "lat": lat,
+                                                        "lon": lon,
+                                                        "timestamp": time.time(),
+                                                    }
+                                            logger.debug(f"Got position from nodeinfo for {node_id}: ({lat}, {lon})")
             except Exception as e:
-                logger.debug(f"Could not get device uptime for {node_id}: {e}")
+                logger.debug(f"Could not get device info for {node_id}: {e}")
 
             logger.info(f"Received message from {node_id}: {text[:50]}...")
 
