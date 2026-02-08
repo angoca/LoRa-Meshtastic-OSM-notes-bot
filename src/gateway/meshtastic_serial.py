@@ -129,16 +129,25 @@ class MeshtasticSerial:
             return
 
         try:
-            # Debug: log packet structure
-            logger.debug(f"Received packet: keys={list(packet.keys())}, decoded={packet.get('decoded', {})}")
-            
-            # Extract message data
+            # Extract message data - meshtastic-python may provide decoded data directly
+            # or we need to check if packet has 'decoded' key
             decoded = packet.get("decoded", {})
+            
+            # If decoded is empty but packet has other keys, it might be a raw packet
+            # meshtastic-python should decode it automatically, but check both formats
+            if not decoded and "encrypted" in packet:
+                # Packet is encrypted, meshtastic-python should decode it
+                # Skip encrypted packets that aren't decoded yet
+                logger.debug("Received encrypted packet (not decoded yet)")
+                return
+            
             portnum = decoded.get("portnum")
             
-            logger.debug(f"Portnum: {portnum}, type: {type(portnum)}")
+            # Skip if no portnum (not a data packet)
+            if portnum is None:
+                return
 
-            # Handle text messages (portnum can be string "TEXT_MESSAGE_APP" or number)
+            # Handle text messages (portnum can be string "TEXT_MESSAGE_APP" or number 1)
             if portnum == "TEXT_MESSAGE_APP" or (isinstance(portnum, int) and portnum == 1):
                 text = decoded.get("text", "")
                 from_node = packet.get("from")
