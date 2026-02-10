@@ -21,18 +21,18 @@ logger = logging.getLogger(__name__)
 class MeshtasticSerial:
     """
     Meshtastic serial connection using meshtastic-python library.
-    
+
     Manages USB serial communication with Meshtastic devices using the
     official meshtastic-python library. Handles connection, reconnection,
     message parsing (protobuf), and sending DMs/broadcasts.
-    
+
     Attributes:
         port: Serial port path (e.g., "/dev/ttyUSB0")
         interface: meshtastic SerialInterface object
         running: Flag indicating if reader thread is running
         message_callback: Callback function for incoming messages
         position_cache: Cache for node positions (node_id -> (lat, lon, timestamp))
-        
+
     Note:
         Uses meshtastic-python library to parse protobuf packets and handle
         real Meshtastic protocol communication.
@@ -86,13 +86,13 @@ class MeshtasticSerial:
                 connectNow=True,
             )
             logger.info(f"Connected to Meshtastic device at {self.port}")
-            
+
             # Configure gateway device role to CLIENT_MUTE
             self._configure_gateway_role()
 
             # Check if device is T-Echo and configure GPS broadcast if needed
             self._configure_techo_gps()
-            
+
             return True
         except Exception as e:
             logger.error(f"Failed to connect to {self.port}: {e}")
@@ -145,7 +145,7 @@ class MeshtasticSerial:
             # Get device info to detect T-Echo
             node_info = self.interface.getMyNodeInfo()
             hardware = node_info.get("hardware", "")
-            
+
             # Check if it's a T-Echo (Lilygo T-Echo)
             # T-Echo devices typically have "TECHO" or "t-echo" in hardware/model
             is_techo = (
@@ -153,18 +153,18 @@ class MeshtasticSerial:
                 "t-echo" in str(hardware).lower() or
                 "lilygo" in str(hardware).lower()
             )
-            
+
             if not is_techo:
                 # Also check pio_env which might contain device info
                 pio_env = node_info.get("pio_env", "")
                 is_techo = "techo" in str(pio_env).lower() or "t-echo" in str(pio_env).lower()
-            
+
             if is_techo:
                 logger.info("T-Echo device detected, configuring GPS broadcast interval to 60 seconds")
                 try:
                     # Get local node configuration
                     local_node = self.interface.getNode("^local")
-                    
+
                     # Configure position broadcast interval to 60 seconds (minimum)
                     # This is the interval at which position updates are broadcast
                     if hasattr(local_node, "localConfig") and hasattr(local_node.localConfig, "position"):
@@ -211,20 +211,32 @@ class MeshtasticSerial:
         if self.running:
             return
 
-        if not self.connect():
-            logger.error("Failed to connect, cannot start")
-            return
-
-        self.running = True
-
-        # Subscribe to receive messages using pubsub
+        # Subscribe to receive messages using pubsub BEFORE connecting
         # meshtastic-python publishes decoded text messages to meshtastic.receive.text
         # and position messages to meshtastic.receive.position
-        logger.info(f"Subscribing to meshtastic.receive.text and meshtastic.receive.position")
-        logger.info(f"Callback function: {self.message_callback}, Running: {self.running}")
-        pub.subscribe(self._on_receive_text, "meshtastic.receive.text")
-        pub.subscribe(self._on_receive_position, "meshtastic.receive.position")
-        logger.info(f"Successfully subscribed to pubsub topics")
+        # IMPORTANT: Subscribe BEFORE creating interface so we catch all messages
+        # Also subscribe to meshtastic.receive to catch all packets and filter manually
+        logger.info(f"Subscribing to meshtastic.receive.text, meshtastic.receive.position, and meshtastic.receive")
+        logger.info(f"Callback function: {self.message_callback}")
+        try:
+            pub.subscribe(self._on_receive_text, "meshtastic.receive.text")
+            pub.subscribe(self._on_receive_position, "meshtastic.receive.position")
+            # Also subscribe to general receive topic as fallback
+            pub.subscribe(self._on_receive_all, "meshtastic.receive")
+            logger.info(f"Successfully subscribed to pubsub topics")
+        except Exception as e:
+            logger.error(f"Failed to subscribe to pubsub topics: {e}")
+            return
+
+        # Set running=True BEFORE connect() to ensure we process messages received
+        # during or immediately after connection establishment. If connect() fails,
+        # we'll revert this flag.
+        self.running = True
+
+        if not self.connect():
+            logger.error("Failed to connect, cannot start")
+            self.running = False
+            return
 
         logger.info("Meshtastic serial reader started")
 
@@ -243,16 +255,21 @@ class MeshtasticSerial:
             except Exception as e:
                 # Topic may not exist if subscription never succeeded
                 logger.debug(f"Could not unsubscribe from position topic: {e}")
+            try:
+                pub.unsubscribe(self._on_receive_all, "meshtastic.receive")
+            except Exception as e:
+                # Topic may not exist if subscription never succeeded
+                logger.debug(f"Could not unsubscribe from general receive topic: {e}")
         self.disconnect()
 
     def _on_receive_text(self, packet, interface):
         """Handle received text message from Meshtastic."""
         logger.info(f"Received text packet from Meshtastic: {packet}")
-        
+
         if not self.running:
             logger.warning("Received message but gateway is not running")
             return
-            
+
         if not self.message_callback:
             logger.warning("Received message but no callback is set")
             return
@@ -262,9 +279,9 @@ class MeshtasticSerial:
             decoded = packet.get("decoded", {})
             text = decoded.get("text", "")
             from_node = packet.get("from")
-            
+
             logger.info(f"Parsed message - from_node: {from_node}, text: {text[:50] if text else 'None'}")
-            
+
             if not from_node or not text:
                 logger.info(f"Skipping message - missing from_node or text (from_node={from_node}, text={bool(text)})")
                 return
@@ -282,7 +299,7 @@ class MeshtasticSerial:
             # Initialize position variables using a list to avoid Python scope issues
             # Python treats variables assigned in nested try blocks as local, causing UnboundLocalError
             position_data = [None, None]  # [lat, lon]
-            
+
             # Get position from cache if available
             if self._use_position_cache:
                 # Use PositionCache API
@@ -307,7 +324,7 @@ class MeshtasticSerial:
                             node_num = int(node_id[1:], 16)
                         except ValueError:
                             logger.debug(f"Could not parse node_id {node_id} to node number")
-                    
+
                     if node_num:
                         logger.debug(f"Looking up node info for {node_id} (node_num={node_num})")
                         try:
@@ -317,7 +334,7 @@ class MeshtasticSerial:
                             node_info = None
                         if node_info:
                             logger.debug(f"Node info for {node_id}: {list(node_info.keys())}")
-                            
+
                             # Check for device metrics with uptime
                             device_metrics = node_info.get("deviceMetrics")
                             if device_metrics:
@@ -325,25 +342,25 @@ class MeshtasticSerial:
                                 logger.debug(f"Device uptime for {node_id}: {device_uptime} seconds")
                             else:
                                 logger.debug(f"No deviceMetrics found for {node_id}")
-                            
+
                             # Try to get position from nodeinfo if not in cache
                             if position_data[0] is None or position_data[1] is None:
                                 position_info = node_info.get("position")
                                 logger.debug(f"Position info for {node_id}: {position_info}")
-                                
+
                                 if position_info:
                                     # Position can be in different formats
                                     if "latitudeI" in position_info and "longitudeI" in position_info:
                                         lat_i = position_info.get("latitudeI")
                                         lon_i = position_info.get("longitudeI")
                                         logger.debug(f"Position integers for {node_id}: lat_i={lat_i}, lon_i={lon_i}")
-                                        
+
                                         if lat_i is not None and lon_i is not None:
                                             # Calculate position from nodeinfo
                                             node_lat = lat_i / 1e7
                                             node_lon = lon_i / 1e7
                                             logger.info(f"Got position from nodeinfo for {node_id}: ({node_lat}, {node_lon})")
-                                            
+
                                             # Update cache with position from nodeinfo
                                             if self._use_position_cache:
                                                 self.position_cache.update(node_id, node_lat, node_lon)
@@ -393,6 +410,37 @@ class MeshtasticSerial:
             logger.error(f"Error processing text message: {e}")
             logger.error(f"Traceback: {traceback.format_exc()}")
 
+    def _on_receive_all(self, packet, interface):
+        """Handle all received packets - fallback to catch messages that don't go to specific topics."""
+        from_node = packet.get('from')
+        from_id = packet.get('fromId')
+        channel = packet.get('channel')
+
+        # Check if packet has decoded data
+        decoded = packet.get("decoded")
+        if decoded:
+            portnum = decoded.get("portnum")
+            logger.info(f"Received decoded packet: from={from_id or from_node}, portnum={portnum}, channel={channel}")
+
+            # TEXT_MESSAGE_APP portnum is typically 'TEXT_MESSAGE_APP' or 1
+            if portnum == "TEXT_MESSAGE_APP" or portnum == 1:
+                logger.info(f"✅ Detected text message from {from_id or from_node} in general receive topic, forwarding to text handler")
+                self._on_receive_text(packet, interface)
+            elif portnum == "POSITION_APP" or portnum == 3:
+                logger.debug(f"Detected position message from {from_id or from_node}, forwarding to position handler")
+                self._on_receive_position(packet, interface)
+            else:
+                logger.debug(f"Other packet type from {from_id or from_node}: portnum={portnum}")
+        else:
+            # Check if it's encrypted - meshtastic-python should decrypt it automatically
+            # but if it's not decrypted, we can't process it
+            encrypted = packet.get("encrypted")
+            if encrypted:
+                logger.info(f"⚠️ Encrypted packet from {from_id or from_node} (channel={channel}) - NOT DECODED. This may be a text message we can't read!")
+                logger.info(f"   Possible causes: wrong channel, encryption key mismatch, or unknown node")
+            else:
+                logger.debug(f"Packet from {from_id or from_node} has no decoded data: {list(packet.keys())}")
+
     def _on_receive_position(self, packet, interface):
         """Handle received position update from Meshtastic."""
         if not self.running:
@@ -403,7 +451,7 @@ class MeshtasticSerial:
             decoded = packet.get("decoded", {})
             position_data = decoded.get("position", {})
             from_node = packet.get("from")
-            
+
             if not from_node or not position_data:
                 return
 
@@ -414,16 +462,16 @@ class MeshtasticSerial:
                 node_id = str(from_node)
                 if not node_id.startswith("!") and len(node_id) > 0:
                     node_id = f"!{node_id}"
-            
+
             # Extract position (Meshtastic uses integer coordinates)
             lat_i = position_data.get("latitudeI")
             lon_i = position_data.get("longitudeI")
-            
+
             if lat_i is not None and lon_i is not None:
                 # Convert from integer (1e-7 degrees) to float
                 lat = lat_i / 1e7
                 lon = lon_i / 1e7
-                
+
                 # Update position cache
                 with self._lock:
                     if self._use_position_cache:
@@ -436,7 +484,7 @@ class MeshtasticSerial:
                             "lon": lon,
                             "timestamp": time.time(),
                         }
-                
+
                 logger.debug(f"Updated position for {node_id}: {lat}, {lon}")
 
         except Exception as e:
@@ -452,7 +500,7 @@ class MeshtasticSerial:
             # Convert node_id format if needed
             # Meshtastic expects node number (int) or node ID string (like "!12345678")
             node_num = None
-            
+
             if node_id.startswith("!"):
                 # Extract node number from ID format "!12345678" or "!9e7878a4"
                 try:

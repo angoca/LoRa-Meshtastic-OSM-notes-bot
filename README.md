@@ -178,6 +178,7 @@ Los usuarios pueden enviar comandos desde la app Meshtastic:
 | `#osmcount` | Conteo de notas creadas (hoy + total) |
 | `#osmlist [n]` | Lista últimas `n` notas (default: 5, max: 20) |
 | `#osmqueue` | Tamaño de cola total y del nodo |
+| `#osmnodes` | Lista todos los nodos conocidos en la red mesh |
 
 Variantes aceptadas para `#osmnote`: `#osm-note`, `#osm_note`
 

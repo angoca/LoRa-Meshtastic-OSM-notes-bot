@@ -323,3 +323,54 @@ msgstr "• Sin parámetro: muestra idioma actual\n"
 
 msgid "• Con parámetro: cambia idioma (es=Español, en=English)\n\n"
 msgstr "• Con parámetro: cambia idioma (es=Español, en=English)\n\n"
+
+msgid "📡 Nodos en la red ({count}):\n"
+msgstr "📡 Nodos en la red ({count}):\n"
+
+msgid "📡 No hay nodos conocidos en la red\nNo known nodes in the mesh"
+msgstr "📡 No hay nodos conocidos en la red"
+
+msgid "{sec}s"
+msgstr "{sec}s"
+
+msgid "{min}m"
+msgstr "{min}m"
+
+msgid "{hr}h"
+msgstr "{hr}h"
+
+msgid "{days}d"
+msgstr "{days}d"
+
+msgid "visto hace"
+msgstr "visto hace"
+
+msgid "\n... y {more} más"
+msgstr "\n... y {more} más"
+
+msgid "• #osmnodes - Listar nodos en la red\n"
+msgstr "• #osmnodes - Listar nodos en la red\n"
+
+msgid "📡 #osmnodes\n"
+msgstr "📡 #osmnodes\n"
+
+msgid "Lista todos los nodos conocidos en la red mesh.\n"
+msgstr "Lista todos los nodos conocidos en la red mesh.\n"
+
+msgid "Muestra:\n"
+msgstr "Muestra:\n"
+
+msgid "• Node ID de cada dispositivo\n"
+msgstr "• Node ID de cada dispositivo\n"
+
+msgid "• Última posición GPS conocida\n"
+msgstr "• Última posición GPS conocida\n"
+
+msgid "• Tiempo desde la última vez visto\n"
+msgstr "• Tiempo desde la última vez visto\n"
+
+msgid "• Número de veces que se ha visto\n\n"
+msgstr "• Número de veces que se ha visto\n\n"
+
+msgid "Útil para validar conectividad entre dispositivos.\n\n"
+msgstr "Útil para validar conectividad entre dispositivos.\n\n"

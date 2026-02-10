@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **New Command**: `#osmnodes` command to list all known nodes in the mesh network, showing node ID, GPS coordinates, time since last seen, and number of times seen. Useful for validating mesh connectivity and device presence.
+- **Project Attribution**: OSM notes now include attribution text ("Created via OSM Mesh Notes Gateway") at the end, translated to the user's current language preference.
+
+### Fixed
+- Fixed missing `locale` parameter in `send_note` method that prevented project attribution from being translated correctly.
+- Fixed "Interface not connected, cannot send broadcast" warning during daily broadcast attempts by checking connection status before sending.
+- Improved message reception reliability by subscribing to pubsub topics *before* creating the SerialInterface, ensuring all messages are captured.
+- Added fallback subscription to general `meshtastic.receive` topic to catch packets that might not be published to specific topics.
+
+### Changed
+- **Logging Configuration**: Changed default log level from DEBUG to INFO for production use. Meshtastic library logging is now set to WARNING level to reduce verbosity.
+- **Message Delays**: Increased delay between multi-part messages (e.g., `#osmhelp`) from 1 second to 2 seconds to prevent message loss in the mesh network.
+- **Documentation**: Updated `README.md` and help messages (`#osmhelp`, `#osmmorehelp`) to include `#osmnodes` command documentation.
+
+### Technical Details
+- Enhanced `MeshtasticSerial.start()` to subscribe to pubsub topics before connecting to ensure message capture.
+- Added `_on_receive_all` method as a fallback handler for general `meshtastic.receive` topic, filtering by `portnum` and forwarding to appropriate handlers.
+- Improved logging in `_on_receive_text` and `_on_receive_all` with INFO level messages for better debugging visibility.
+- Added `is_connected()` method to `MeshtasticSerial` class for connection status checking.
+
 ## [0.1.1] - 2026-02-08
 
 ### Fixed

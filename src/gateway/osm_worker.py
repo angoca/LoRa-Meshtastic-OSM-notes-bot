@@ -31,6 +31,7 @@ class OSMWorker:
         lat: float,
         lon: float,
         text: str,
+        locale: Optional[str] = None,
     ) -> Optional[Dict[str, Any]]:
         """
         Send note to OSM Notes API with rate limiting.

@@ -207,3 +207,51 @@ def test_osmnote_no_rate_limit_on_help(processor):
         cmd_type, response = processor.process_message(node_id, "#osmhelp")
         assert cmd_type == "osmhelp"
         assert response is not None
+
+
+def test_osmnodes_empty(processor):
+    """Test #osmnodes command with no known nodes."""
+    cmd_type, response = processor.process_message("test_node", "#osmnodes")
+    assert cmd_type == "osmnodes"
+    assert "No hay nodos conocidos" in response or "No known nodes" in response
+
+
+def test_osmnodes_with_positions(processor, db, position_cache):
+    """Test #osmnodes command with known nodes."""
+    import time
+    
+    # Add some positions to the cache
+    node1 = "node1"
+    node2 = "node2"
+    node3 = "node3"
+    
+    position_cache.update(node1, 4.6097, -74.0817)
+    time.sleep(0.1)  # Small delay to ensure different timestamps
+    position_cache.update(node2, 4.6100, -74.0820)
+    time.sleep(0.1)
+    position_cache.update(node3, 4.6105, -74.0825)
+    
+    cmd_type, response = processor.process_message("test_node", "#osmnodes")
+    assert cmd_type == "osmnodes"
+    assert "Nodos en la red" in response or "nodes in the mesh" in response.lower()
+    assert node1 in response
+    assert node2 in response
+    assert node3 in response
+    assert "4.6097" in response or "4.609" in response  # Check coordinates are shown
+    assert "-74.0817" in response or "-74.081" in response
+
+
+def test_osmnodes_limits_to_20(processor, db, position_cache):
+    """Test that #osmnodes limits output to 20 nodes."""
+    import time
+    
+    # Add more than 20 nodes
+    for i in range(25):
+        node_id = f"node{i}"
+        position_cache.update(node_id, 4.6097 + i * 0.0001, -74.0817 + i * 0.0001)
+        time.sleep(0.01)  # Small delay
+    
+    cmd_type, response = processor.process_message("test_node", "#osmnodes")
+    assert cmd_type == "osmnodes"
+    assert "... y" in response or "... and" in response.lower()
+    assert "5 más" in response or "5 more" in response.lower()  # Should show 25 - 20 = 5 more

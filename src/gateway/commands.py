@@ -105,7 +105,8 @@ def MSG_HELP(locale: Optional[str] = None):
         + _("• #osmstatus - Ver estado del gateway\n", locale)
         + _("• #osmcount - Ver conteo de notas\n", locale)
         + _("• #osmlist [n] - Listar últimas notas\n", locale)
-        + _("• #osmqueue - Ver tamaño de cola\n", locale)
+        +         _("• #osmqueue - Ver tamaño de cola\n", locale)
+        + _("• #osmnodes - Listar nodos en la red\n", locale)
         + _("• #osmhelp - Esta ayuda\n", locale)
         + _("• #osmmorehelp - Ayuda extendida con detalles\n\n", locale)
         + _("• #osmlang [es|en] - Cambiar idioma / Change language\n\n", locale)
@@ -145,6 +146,14 @@ def MSG_MORE_HELP(locale: Optional[str] = None):
         + _("Muestra el tamaño de las colas:\n", locale)
         + _("• Cola total del gateway\n", locale)
         + _("• Tu cola personal\n\n", locale)
+        + _("📡 #osmnodes\n", locale)
+        + _("Lista todos los nodos conocidos en la red mesh.\n", locale)
+        + _("Muestra:\n", locale)
+        + _("• Node ID de cada dispositivo\n", locale)
+        + _("• Última posición GPS conocida\n", locale)
+        + _("• Tiempo desde la última vez visto\n", locale)
+        + _("• Número de veces que se ha visto\n\n", locale)
+        + _("Útil para validar conectividad entre dispositivos.\n\n", locale)
         + _("🌐 #osmlang [es|en]\n", locale)
         + _("Cambia el idioma de los mensajes.\n", locale)
         + _("• Sin parámetro: muestra idioma actual\n", locale)
@@ -311,6 +320,9 @@ class CommandProcessor:
             _, queue_msg = self._handle_queue(node_id, user_lang)
             return "osmqueue", queue_msg
 
+        if text_lower == "#osmnodes":
+            return self._handle_nodes(user_lang)
+
         # Check for osmnote
         osmnote_text = self.extract_osmnote(text)
         if osmnote_text is not None:
@@ -398,6 +410,69 @@ class CommandProcessor:
             + _("Tu cola: {queue}", locale).format(queue=node_queue)
         )
         return "osmqueue", queue_msg
+
+    def _handle_nodes(self, locale: Optional[str] = None) -> Tuple[str, str]:
+        """Handle #osmnodes command - list all known nodes in the mesh."""
+        import time
+        from datetime import datetime, timedelta
+        
+        # Get all positions from database
+        all_positions = self.db.load_all_positions()
+        
+        if not all_positions:
+            return "osmnodes", _("📡 No hay nodos conocidos en la red\nNo known nodes in the mesh", locale)
+        
+        # Sort by last seen (most recent first)
+        nodes_list = []
+        now = time.time()
+        
+        for node_id, pos_data in all_positions.items():
+            received_at = pos_data.get("received_at", 0)
+            age_seconds = now - received_at
+            
+            # Format age
+            if age_seconds < 60:
+                age_str = _("{sec}s", locale).format(sec=int(age_seconds))
+            elif age_seconds < 3600:
+                age_str = _("{min}m", locale).format(min=int(age_seconds / 60))
+            elif age_seconds < 86400:
+                age_str = _("{hr}h", locale).format(hr=int(age_seconds / 3600))
+            else:
+                age_str = _("{days}d", locale).format(days=int(age_seconds / 86400))
+            
+            lat = pos_data.get("lat")
+            lon = pos_data.get("lon")
+            seen_count = pos_data.get("seen_count", 1)
+            
+            nodes_list.append({
+                "node_id": node_id,
+                "lat": lat,
+                "lon": lon,
+                "age": age_seconds,
+                "age_str": age_str,
+                "seen_count": seen_count,
+            })
+        
+        # Sort by most recent first
+        nodes_list.sort(key=lambda x: x["age"])
+        
+        # Build response message
+        header = _("📡 Nodos en la red ({count}):\n", locale).format(count=len(nodes_list))
+        nodes_msg = []
+        
+        for i, node in enumerate(nodes_list[:20], 1):  # Limit to 20 nodes
+            node_line = f"{i}. {node['node_id']}"
+            if node['lat'] and node['lon']:
+                node_line += f" ({node['lat']:.4f}, {node['lon']:.4f})"
+            node_line += f" - {_('visto hace', locale)} {node['age_str']}"
+            if node['seen_count'] > 1:
+                node_line += f" ({node['seen_count']}x)"
+            nodes_msg.append(node_line)
+        
+        if len(nodes_list) > 20:
+            nodes_msg.append(_("\n... y {more} más", locale).format(more=len(nodes_list) - 20))
+        
+        return "osmnodes", header + "\n".join(nodes_msg)
 
     def _validate_coordinates(self, lat: float, lon: float, locale: Optional[str] = None) -> Tuple[bool, Optional[str]]:
         """
