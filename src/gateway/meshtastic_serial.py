@@ -220,8 +220,11 @@ class MeshtasticSerial:
         # Subscribe to receive messages using pubsub
         # meshtastic-python publishes decoded text messages to meshtastic.receive.text
         # and position messages to meshtastic.receive.position
+        logger.info(f"Subscribing to meshtastic.receive.text and meshtastic.receive.position")
+        logger.info(f"Callback function: {self.message_callback}, Running: {self.running}")
         pub.subscribe(self._on_receive_text, "meshtastic.receive.text")
         pub.subscribe(self._on_receive_position, "meshtastic.receive.position")
+        logger.info(f"Successfully subscribed to pubsub topics")
 
         logger.info("Meshtastic serial reader started")
 
@@ -244,7 +247,7 @@ class MeshtasticSerial:
 
     def _on_receive_text(self, packet, interface):
         """Handle received text message from Meshtastic."""
-        logger.debug(f"Received text packet: {packet}")
+        logger.info(f"Received text packet from Meshtastic: {packet}")
         
         if not self.running:
             logger.warning("Received message but gateway is not running")
@@ -260,10 +263,10 @@ class MeshtasticSerial:
             text = decoded.get("text", "")
             from_node = packet.get("from")
             
-            logger.debug(f"Parsed message - from_node: {from_node}, text: {text[:50] if text else 'None'}")
+            logger.info(f"Parsed message - from_node: {from_node}, text: {text[:50] if text else 'None'}")
             
             if not from_node or not text:
-                logger.debug(f"Skipping message - missing from_node or text (from_node={from_node}, text={bool(text)})")
+                logger.info(f"Skipping message - missing from_node or text (from_node={from_node}, text={bool(text)})")
                 return
 
             # Convert node number to string format (Meshtastic uses 8-char hex)
