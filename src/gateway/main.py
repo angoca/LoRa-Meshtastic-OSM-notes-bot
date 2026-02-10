@@ -228,6 +228,11 @@ class Gateway:
 
     def _check_daily_broadcast(self):
         """Check if daily broadcast should be sent (once per calendar day, persisted across restarts)."""
+        # Check if interface is connected before attempting broadcast
+        if not self.serial.is_connected():
+            logger.debug("Meshtastic interface not connected, skipping daily broadcast")
+            return
+        
         now = datetime.now()
         today_str = now.strftime("%Y-%m-%d")
         
