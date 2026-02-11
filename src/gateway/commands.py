@@ -365,8 +365,7 @@ class CommandProcessor:
         count_msg = (
             _("📊 Notas creadas:\n", locale)
             + _("Hoy: {today}\n", locale).format(today=stats['today'])
-            + _("Total: {total}\n", locale).format(total=stats['total'])
-            + _("Zona horaria: {tz}", locale).format(tz=stats['timezone'])
+            + _("Total: {total}", locale).format(total=stats['total'])
         )
         return "osmcount", count_msg
 
@@ -386,10 +385,32 @@ class CommandProcessor:
         if not notes:
             return "osmlist", _("📝 No hay notas registradas.", locale)
 
+        # Convert UTC timestamps to server timezone for display
+        from .config import TZ
+        import pytz
+        tz = pytz.timezone(TZ)
+
         lines = [_("📝 Últimas {count} notas:", locale).format(count=len(notes))]
         for note in notes:
             status_icon = "⏳" if note["status"] == "pending" else "✅"
-            created = datetime.fromisoformat(note["created_at"]).strftime("%Y-%m-%d %H:%M")
+            # Parse UTC datetime and convert to server timezone
+            created_str = note["created_at"]
+            try:
+                # Parse as UTC (stored as UTC in database)
+                if 'Z' in created_str or '+' in created_str or created_str.endswith('UTC'):
+                    created_utc = datetime.fromisoformat(created_str.replace('Z', '+00:00'))
+                else:
+                    # No timezone info, assume UTC
+                    created_utc = datetime.fromisoformat(created_str)
+                    created_utc = pytz.UTC.localize(created_utc)
+                # Convert to server timezone
+                created_local = created_utc.astimezone(tz)
+                # Format with timezone abbreviation
+                tz_abbr = created_local.strftime("%Z") or TZ.split("/")[-1][:3].upper()
+                created = created_local.strftime(f"%Y-%m-%d %H:%M ({tz_abbr})")
+            except (ValueError, AttributeError):
+                # Fallback to original format if parsing fails
+                created = datetime.fromisoformat(created_str).strftime("%Y-%m-%d %H:%M")
             text_preview = note["text_original"][:30] + "..." if len(note["text_original"]) > 30 else note["text_original"]
             if note["status"] == "sent" and note["osm_note_url"]:
                 lines.append(f"{status_icon} {created}: {text_preview} → {note['osm_note_url']}")

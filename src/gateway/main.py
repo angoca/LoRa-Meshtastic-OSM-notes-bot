@@ -6,6 +6,7 @@ import time
 import signal
 import logging
 import threading
+import subprocess
 from datetime import datetime, timedelta
 
 from .config import (
@@ -47,11 +48,11 @@ logger = logging.getLogger(__name__)
 class Gateway:
     """
     Main gateway application orchestrating all components.
-    
+
     Coordinates Meshtastic serial communication, command processing,
     OSM API integration, and notifications. Runs background workers
     for queue processing and handles graceful shutdown.
-    
+
     Components:
         - Database: SQLite persistence
         - PositionCache: GPS position cache
@@ -59,7 +60,7 @@ class Gateway:
         - CommandProcessor: Command/message processing
         - OSMWorker: OSM API integration
         - NotificationManager: DM notifications
-        
+
     Threads:
         - Main thread: Signal handling and main loop
         - Serial read thread: Continuous message reading (daemon)
@@ -82,9 +83,13 @@ class Gateway:
 
         # Worker thread
         self.worker_thread: Optional[threading.Thread] = None
-        
+
         # Track if this is the first worker cycle (to skip broadcast on startup)
         self._first_worker_cycle = True
+
+        # Track startup timestamp for time correction
+        self._startup_timestamp = time.time()
+        self.db.set_startup_timestamp(self._startup_timestamp)
 
         # Signal handlers
         signal.signal(signal.SIGINT, self._signal_handler)
@@ -173,7 +178,7 @@ class Gateway:
 
             # Get user's preferred language for attribution
             user_locale = self.db.get_user_language(note["node_id"])
-            
+
             result = self.osm_worker.send_note(
                 lat=note["lat"],
                 lon=note["lon"],
@@ -207,14 +212,18 @@ class Gateway:
 
                 # Process sent notifications
                 self.notifications.process_sent_notifications()
-                
+
                 # Process failed notifications
                 self.notifications.process_failed_notifications()
+
+                # Check and apply time correction if needed (only once)
+                if not self.db.get_time_correction_applied():
+                    self._check_and_apply_time_correction()
 
                 # Daily broadcast (optional) - skip on first cycle to avoid spam on restart
                 if DAILY_BROADCAST_ENABLED and not self._first_worker_cycle:
                     self._check_daily_broadcast()
-                
+
                 # Mark that we've completed the first cycle
                 self._first_worker_cycle = False
 
@@ -226,22 +235,89 @@ class Gateway:
 
         logger.info("Worker thread stopped")
 
+    def _is_ntp_synchronized(self) -> bool:
+        """
+        Check if system time is synchronized with NTP.
+
+        Returns:
+            True if NTP is synchronized, False otherwise
+        """
+        try:
+            # Use timedatectl to check NTP synchronization status
+            result = subprocess.run(
+                ["timedatectl", "status"],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            if result.returncode == 0:
+                # Check for "System clock synchronized: yes" in output
+                return "System clock synchronized: yes" in result.stdout
+            return False
+        except (subprocess.TimeoutExpired, FileNotFoundError, subprocess.SubprocessError) as e:
+            logger.debug(f"Could not check NTP status: {e}")
+            return False
+
+    def _check_and_apply_time_correction(self):
+        """
+        Check if NTP has synchronized and apply time correction to pending notes if needed.
+
+        This method:
+        1. Checks if NTP is synchronized
+        2. If synchronized and correction not yet applied, calculates time offset
+        3. Adjusts timestamps of pending notes (not sent notes)
+        4. Marks correction as applied
+        """
+        if not self._is_ntp_synchronized():
+            logger.debug("NTP not synchronized yet, skipping time correction")
+            return
+
+        # Get startup timestamp from database
+        startup_ts = self.db.get_startup_timestamp()
+        if not startup_ts:
+            logger.debug("No startup timestamp found, skipping time correction")
+            return
+
+        # Calculate time offset
+        current_time = time.time()
+        time_offset = current_time - startup_ts
+
+        # Only apply correction if offset is significant (> 60 seconds)
+        # Small offsets (< 60s) are normal and don't need correction
+        if abs(time_offset) < 60:
+            logger.debug(f"Time offset is small ({time_offset:.1f}s), no correction needed")
+            self.db.set_time_correction_applied(True)
+            return
+
+        logger.info(f"Detected time offset: {time_offset:.1f} seconds. Applying correction to pending notes...")
+
+        # Adjust timestamps of pending notes
+        adjusted_count = self.db.adjust_pending_notes_timestamps(time_offset)
+
+        if adjusted_count > 0:
+            logger.info(f"Time correction applied: adjusted {adjusted_count} pending notes by {time_offset:.1f} seconds")
+        else:
+            logger.debug("No pending notes to adjust")
+
+        # Mark correction as applied
+        self.db.set_time_correction_applied(True)
+
     def _check_daily_broadcast(self):
         """Check if daily broadcast should be sent (once per calendar day, persisted across restarts)."""
         # Check if interface is connected before attempting broadcast
         if not self.serial.is_connected():
             logger.debug("Meshtastic interface not connected, skipping daily broadcast")
             return
-        
+
         now = datetime.now()
         today_str = now.strftime("%Y-%m-%d")
-        
+
         # Check if we already sent a broadcast today
         last_broadcast_date = self.db.get_last_broadcast_date()
         if last_broadcast_date == today_str:
             logger.debug(f"Daily broadcast already sent today ({today_str}), skipping")
             return
-        
+
         # Send broadcast
         from .i18n import get_current_locale
         broadcast_msg = MSG_DAILY_BROADCAST(get_current_locale())

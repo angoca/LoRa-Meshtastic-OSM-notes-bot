@@ -504,3 +504,80 @@ class Database:
                     updated_at = CURRENT_TIMESTAMP
             """, (date,))
             conn.commit()
+
+    def get_startup_timestamp(self) -> Optional[float]:
+        """Get the startup timestamp (Unix timestamp) when the service started."""
+        with self._get_connection() as conn:
+            cursor = conn.execute("""
+                SELECT value FROM system_state
+                WHERE key = 'startup_timestamp'
+            """)
+            row = cursor.fetchone()
+            return float(row["value"]) if row else None
+
+    def set_startup_timestamp(self, timestamp: float):
+        """Set the startup timestamp (Unix timestamp)."""
+        with self._get_connection() as conn:
+            conn.execute("""
+                INSERT INTO system_state (key, value, updated_at)
+                VALUES ('startup_timestamp', ?, CURRENT_TIMESTAMP)
+                ON CONFLICT(key) DO UPDATE SET
+                    value = excluded.value,
+                    updated_at = CURRENT_TIMESTAMP
+            """, (str(timestamp),))
+            conn.commit()
+
+    def get_time_correction_applied(self) -> bool:
+        """Check if time correction has already been applied."""
+        with self._get_connection() as conn:
+            cursor = conn.execute("""
+                SELECT value FROM system_state
+                WHERE key = 'time_correction_applied'
+            """)
+            row = cursor.fetchone()
+            return row and row["value"] == "true"
+
+    def set_time_correction_applied(self, applied: bool = True):
+        """Mark that time correction has been applied."""
+        with self._get_connection() as conn:
+            conn.execute("""
+                INSERT INTO system_state (key, value, updated_at)
+                VALUES ('time_correction_applied', ?, CURRENT_TIMESTAMP)
+                ON CONFLICT(key) DO UPDATE SET
+                    value = excluded.value,
+                    updated_at = CURRENT_TIMESTAMP
+            """, ("true" if applied else "false",))
+            conn.commit()
+
+    def adjust_pending_notes_timestamps(self, time_offset_seconds: float) -> int:
+        """
+        Adjust timestamps of pending notes by adding time_offset_seconds.
+        
+        Only adjusts notes with status='pending' that were created before the correction.
+        Does not modify notes with status='sent' (already sent to OSM).
+        
+        Args:
+            time_offset_seconds: Number of seconds to add to timestamps (can be negative)
+            
+        Returns:
+            Number of notes adjusted
+        """
+        if abs(time_offset_seconds) < 1.0:
+            # Ignore very small offsets (< 1 second)
+            return 0
+            
+        with self._get_connection() as conn:
+            # Update created_at for pending notes
+            # SQLite datetime arithmetic: add seconds using datetime(created_at, '+X seconds')
+            cursor = conn.execute("""
+                UPDATE notes
+                SET created_at = datetime(created_at, ? || ' seconds')
+                WHERE status = 'pending'
+            """, (time_offset_seconds,))
+            conn.commit()
+            adjusted_count = cursor.rowcount
+            
+            if adjusted_count > 0:
+                logger.info(f"Adjusted timestamps of {adjusted_count} pending notes by {time_offset_seconds:.1f} seconds")
+            
+            return adjusted_count
