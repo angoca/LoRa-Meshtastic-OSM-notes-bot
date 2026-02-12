@@ -1,5 +1,10 @@
 # OSM Mesh Notes Gateway
 
+[![Tests](https://github.com/OSM-Notes/osm-mesh-notes-gateway/actions/workflows/ci.yml/badge.svg)](https://github.com/OSM-Notes/osm-mesh-notes-gateway/actions/workflows/ci.yml)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+
 **Offline field reports via LoRa mesh → OpenStreetMap Notes**
 
 ---
