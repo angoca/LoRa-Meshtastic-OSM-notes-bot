@@ -1,9 +1,12 @@
 # OSM Mesh Notes Gateway
 
-[![Tests](https://github.com/OSM-Notes/osm-mesh-notes-gateway/actions/workflows/ci.yml/badge.svg)](https://github.com/OSM-Notes/osm-mesh-notes-gateway/actions/workflows/ci.yml)
+[![CI](https://github.com/OSM-Notes/osm-mesh-notes-gateway/actions/workflows/ci.yml/badge.svg)](https://github.com/OSM-Notes/osm-mesh-notes-gateway/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/OSM-Notes/osm-mesh-notes-gateway/branch/main/graph/badge.svg)](https://codecov.io/gh/OSM-Notes/osm-mesh-notes-gateway)
+[![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)](https://github.com/OSM-Notes/osm-mesh-notes-gateway/releases)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 
 **Offline field reports via LoRa mesh → OpenStreetMap Notes**
 
@@ -427,3 +430,25 @@ pytest
 # Con cobertura
 pytest --cov=gateway --cov-report=html
 ```
+
+## Pre-commit Hooks
+
+El proyecto incluye hooks de pre-commit para asegurar calidad de código:
+
+```bash
+# Instalar pre-commit
+pip install pre-commit
+
+# Instalar los hooks
+pre-commit install
+
+# Ejecutar manualmente en todos los archivos
+pre-commit run --all-files
+```
+
+Los hooks verifican automáticamente:
+- Formato de código (Black, Ruff)
+- Linting (Ruff)
+- Seguridad (Bandit)
+- Validación de archivos (YAML, JSON, TOML)
+- Detección de conflictos de merge

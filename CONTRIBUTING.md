@@ -162,19 +162,29 @@ git commit -m "feat: descripción del cambio"
 - Instalar extensiones: "Black Formatter" y "Ruff"
 - Configurar formato automático al guardar
 
-**Pre-commit hooks** (opcional):
+**Pre-commit hooks** (recomendado):
+
+El proyecto incluye un archivo `.pre-commit-config.yaml` con hooks configurados para:
+- Formateo automático con Black
+- Linting con Ruff
+- Verificación de archivos (YAML, JSON, TOML)
+- Detección de conflictos de merge
+- Verificaciones de seguridad con Bandit
+
+Para instalar y usar:
 
 ```bash
 # Instalar pre-commit
 pip install pre-commit
 
-# Crear .pre-commit-config.yaml con:
-#   - black
-#   - ruff
-#   - pytest (opcional)
-
+# Instalar los hooks en tu repositorio local
 pre-commit install
+
+# (Opcional) Ejecutar manualmente en todos los archivos
+pre-commit run --all-files
 ```
+
+Los hooks se ejecutarán automáticamente antes de cada commit. Si algún hook falla, el commit será rechazado hasta que corrijas los problemas.
 
 ### Gestión de Dependencias
 
