@@ -72,6 +72,24 @@ El flujo básico es el siguiente:
 
 ## Quick Start
 
+### Ejemplo Rápido
+
+**Enviar un reporte desde tu dispositivo Meshtastic**:
+```
+#osmnote Bache grande en carretera principal. Necesita reparación urgente.
+```
+
+**Respuesta del gateway**:
+```
+✅ Nota creada: Q-12345
+📍 Ubicación: Barrio Centro
+🌐 Ver en OSM: https://www.openstreetmap.org/note/456789
+```
+
+**📖 Ver más ejemplos y casos de uso reales**: [docs/EXAMPLES.md](docs/EXAMPLES.md)
+
+---
+
 ### Requisitos
 
 - **Raspberry Pi 3** (o superior) con Raspberry Pi OS
@@ -129,11 +147,26 @@ sudo journalctl -u lora-osmnotes -f
 
 Desde la app Meshtastic en tu teléfono (conectado por Bluetooth al T-Echo):
 
-- `#osmnote Árbol caído bloquea la calle` - Crea una nota de OSM
+**Crear una nota**:
+```
+#osmnote Árbol caído bloquea la calle
+```
+**Respuesta**:
+```
+✅ Nota creada: Q-12345
+📍 Ubicación: Barrio Centro
+🌐 Ver en OSM: https://www.openstreetmap.org/note/456789
+```
+
+**Otros comandos útiles**:
 - `#osmhelp` - Muestra ayuda básica
 - `#osmmorehelp` - Muestra ayuda adicional detallada
 - `#osmstatus` - Verifica estado del gateway
 - `#osmlist` - Lista tus notas recientes
+- `#osmcount` - Cuenta tus notas (hoy y total)
+- `#osmnodes` - Lista nodos conocidos en la red
+
+**📖 Ver más ejemplos y casos de uso reales**: [docs/EXAMPLES.md](docs/EXAMPLES.md)
 
 ---
 
@@ -149,6 +182,7 @@ Para más información, consulta la documentación técnica:
 - **[docs/SECURITY.md](docs/SECURITY.md)** - Guía de seguridad
 - **[docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)** - Solución de problemas
 - **[docs/TIME_CONFIGURATION.md](docs/TIME_CONFIGURATION.md)** - Configuración de tiempo y sincronización
+- **[docs/EXAMPLES.md](docs/EXAMPLES.md)** - 📖 **Ejemplos de uso y casos de uso reales**
 - **[CONTRIBUTING.md](CONTRIBUTING.md)** - Guía para contribuidores
 
 ### Documentación Técnica Avanzada
